@@ -1,0 +1,540 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2E2E73678720D7F8838E03CE /* Parsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59224B92D69DBAFB7FFD1732 /* Parsing.swift */; };
+		3C4AB38E7E854102F4A5E6D2 /* AstroHopperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */; };
+		47845B0F775DF1068BC2955E /* QuickStartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79C38D17194CD7440D8E5735 /* QuickStartView.swift */; };
+		47ACEF9BEE46E85C6EC91D34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */; };
+		53A9DB171F471E4A4C1F3425 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE4A7D71B2742E7A46BE501 /* ContentView.swift */; };
+		58F8F49322545F2DB622BCAC /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FE21ED3B85C3761A899717 /* HelpView.swift */; };
+		5F0591DFEF2B991E76D5BF93 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */; };
+		5FDFC89F96E8B72E1054376E /* Help.md in Resources */ = {isa = PBXBuildFile; fileRef = 2515A9AE9FD68157EE441176 /* Help.md */; };
+		6552B56CB857C4197FEE4FAF /* LocationProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CCD16963AEB5745C987C5E /* LocationProvider.swift */; };
+		97689D7B13BC03A22B63315F /* SkyRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88DA78816E50AF780C3C986 /* SkyRenderer.swift */; };
+		9907E421CB40F14D1C234589 /* vsop87a.json in Resources */ = {isa = PBXBuildFile; fileRef = B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */; };
+		A6C91CDE378CDD45FCE29839 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 23F64E218F07618FB26F61CD /* catalog.json */; };
+		B65D4DD1F84154B4AE343475 /* MotionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6ADA780EDDB800524364D3A /* MotionTracker.swift */; };
+		B9A66609CA925CD19A03FD7E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D317FBF2354C143A2985C7C3 /* SettingsView.swift */; };
+		BDF0810F82434974372F8124 /* AstroHopperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */; };
+		E525DB07A5423465395B1F12 /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */; };
+		EB54A00B9CD2E1FDEFCA765E /* Planets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81E8168BBB70F8EECB4E126 /* Planets.swift */; };
+		ED7EAC35A72BB703C0129A78 /* SkyMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA77503187E797FD5362DC4 /* SkyMath.swift */; };
+		FBB7ACE2D7F0B24F23F4575E /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 817185F46D37298F3E9D5241 /* Controls.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9B329203E63A68209D14881F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1EF829FE3F1079656BA205D6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 02DC949B913B14E08B54D3DC;
+			remoteInfo = AstroHopper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		23F64E218F07618FB26F61CD /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
+		2515A9AE9FD68157EE441176 /* Help.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Help.md; sourceTree = "<group>"; };
+		3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperApp.swift; sourceTree = "<group>"; };
+		59224B92D69DBAFB7FFD1732 /* Parsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parsing.swift; sourceTree = "<group>"; };
+		79C38D17194CD7440D8E5735 /* QuickStartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickStartView.swift; sourceTree = "<group>"; };
+		7AE4A7D71B2742E7A46BE501 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		817185F46D37298F3E9D5241 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
+		8A46549D52344609FC852876 /* AstroHopperTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AstroHopperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		96222DE4774DC40B8D956FBC /* AstroHopper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AstroHopper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		987A9D2D603FA5ABD4FEA7A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vsop87a.json; sourceTree = "<group>"; };
+		B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperTests.swift; sourceTree = "<group>"; };
+		B6ADA780EDDB800524364D3A /* MotionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTracker.swift; sourceTree = "<group>"; };
+		B7CCD16963AEB5745C987C5E /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
+		CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Catalog.swift; sourceTree = "<group>"; };
+		D317FBF2354C143A2985C7C3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		D5FE21ED3B85C3761A899717 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		F81E8168BBB70F8EECB4E126 /* Planets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Planets.swift; sourceTree = "<group>"; };
+		F88DA78816E50AF780C3C986 /* SkyRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyRenderer.swift; sourceTree = "<group>"; };
+		FBA77503187E797FD5362DC4 /* SkyMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyMath.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		27796B87222AF4833B1E1C1E /* AstroHopper */ = {
+			isa = PBXGroup;
+			children = (
+				04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */,
+				3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */,
+				987A9D2D603FA5ABD4FEA7A6 /* Info.plist */,
+				9B999078FF1C337923EC9897 /* Generated */,
+				3CE5EBDCAFF7A387697D1CEE /* Model */,
+				8BD2B0FE3F3579F03FE8E8C9 /* Resources */,
+				FD1F7E7EEA74BA8CCD61F680 /* Views */,
+			);
+			path = AstroHopper;
+			sourceTree = "<group>";
+		};
+		3CE5EBDCAFF7A387697D1CEE /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */,
+				CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */,
+				B7CCD16963AEB5745C987C5E /* LocationProvider.swift */,
+				B6ADA780EDDB800524364D3A /* MotionTracker.swift */,
+				59224B92D69DBAFB7FFD1732 /* Parsing.swift */,
+				F81E8168BBB70F8EECB4E126 /* Planets.swift */,
+				FBA77503187E797FD5362DC4 /* SkyMath.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		58593FFF085BEE5D33C7DACA /* AstroHopperTests */ = {
+			isa = PBXGroup;
+			children = (
+				B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */,
+			);
+			path = AstroHopperTests;
+			sourceTree = "<group>";
+		};
+		8BD2B0FE3F3579F03FE8E8C9 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2515A9AE9FD68157EE441176 /* Help.md */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		9B999078FF1C337923EC9897 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+				23F64E218F07618FB26F61CD /* catalog.json */,
+				B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */,
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		CF5FAFCFB9ED8582A8CF57F2 = {
+			isa = PBXGroup;
+			children = (
+				27796B87222AF4833B1E1C1E /* AstroHopper */,
+				58593FFF085BEE5D33C7DACA /* AstroHopperTests */,
+				D5E6C348C8FB8742C71FBC87 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D5E6C348C8FB8742C71FBC87 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				96222DE4774DC40B8D956FBC /* AstroHopper.app */,
+				8A46549D52344609FC852876 /* AstroHopperTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FD1F7E7EEA74BA8CCD61F680 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7AE4A7D71B2742E7A46BE501 /* ContentView.swift */,
+				817185F46D37298F3E9D5241 /* Controls.swift */,
+				D5FE21ED3B85C3761A899717 /* HelpView.swift */,
+				79C38D17194CD7440D8E5735 /* QuickStartView.swift */,
+				D317FBF2354C143A2985C7C3 /* SettingsView.swift */,
+				F88DA78816E50AF780C3C986 /* SkyRenderer.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		02DC949B913B14E08B54D3DC /* AstroHopper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EC553F21D8FD361582ECDBAD /* Build configuration list for PBXNativeTarget "AstroHopper" */;
+			buildPhases = (
+				DC0E8967E0F9571AD8A40B59 /* Generate star catalog and planet data */,
+				BE74C679472C26A9367F5D81 /* Sources */,
+				DE2126F835A0AF01DC3E6F5C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AstroHopper;
+			packageProductDependencies = (
+			);
+			productName = AstroHopper;
+			productReference = 96222DE4774DC40B8D956FBC /* AstroHopper.app */;
+			productType = "com.apple.product-type.application";
+		};
+		8A62BE7485E3714B3AF809A2 /* AstroHopperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AD80514456A494A28FEEEC7D /* Build configuration list for PBXNativeTarget "AstroHopperTests" */;
+			buildPhases = (
+				38B79A2DDE82CA60CCC33030 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7D2C846259C6C3018AAC33CF /* PBXTargetDependency */,
+			);
+			name = AstroHopperTests;
+			packageProductDependencies = (
+			);
+			productName = AstroHopperTests;
+			productReference = 8A46549D52344609FC852876 /* AstroHopperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1EF829FE3F1079656BA205D6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					8A62BE7485E3714B3AF809A2 = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = 3B87868FCFB075827378E514 /* Build configuration list for PBXProject "AstroHopper" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = CF5FAFCFB9ED8582A8CF57F2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D5E6C348C8FB8742C71FBC87 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				02DC949B913B14E08B54D3DC /* AstroHopper */,
+				8A62BE7485E3714B3AF809A2 /* AstroHopperTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DE2126F835A0AF01DC3E6F5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47ACEF9BEE46E85C6EC91D34 /* Assets.xcassets in Resources */,
+				5FDFC89F96E8B72E1054376E /* Help.md in Resources */,
+				A6C91CDE378CDD45FCE29839 /* catalog.json in Resources */,
+				9907E421CB40F14D1C234589 /* vsop87a.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		DC0E8967E0F9571AD8A40B59 /* Generate star catalog and planet data */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Tools/generate_data.py",
+				"$(SRCROOT)/../create_data.py",
+				"$(SRCROOT)/../vsop87a_combined.js",
+				"$(SRCROOT)/../OpenNGC/NGC.csv",
+				"$(SRCROOT)/../western_constellations_atlas_of_space/data/hygdata_v3/hygdata_v3.csv",
+				"$(SRCROOT)/../western_constellations_atlas_of_space/data/processed/centered_constellations.csv",
+				"$(SRCROOT)/../western_constellations_atlas_of_space/data/stellarium_western_asterisms/constellationship.fab",
+			);
+			name = "Generate star catalog and planet data";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/AstroHopper/Generated/catalog.json",
+				"$(SRCROOT)/AstroHopper/Generated/vsop87a.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "python3 \"${SRCROOT}/Tools/generate_data.py\" \"${SRCROOT}/AstroHopper/Generated\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		38B79A2DDE82CA60CCC33030 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3C4AB38E7E854102F4A5E6D2 /* AstroHopperTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE74C679472C26A9367F5D81 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5F0591DFEF2B991E76D5BF93 /* AppModel.swift in Sources */,
+				BDF0810F82434974372F8124 /* AstroHopperApp.swift in Sources */,
+				E525DB07A5423465395B1F12 /* Catalog.swift in Sources */,
+				53A9DB171F471E4A4C1F3425 /* ContentView.swift in Sources */,
+				FBB7ACE2D7F0B24F23F4575E /* Controls.swift in Sources */,
+				58F8F49322545F2DB622BCAC /* HelpView.swift in Sources */,
+				6552B56CB857C4197FEE4FAF /* LocationProvider.swift in Sources */,
+				B65D4DD1F84154B4AE343475 /* MotionTracker.swift in Sources */,
+				2E2E73678720D7F8838E03CE /* Parsing.swift in Sources */,
+				EB54A00B9CD2E1FDEFCA765E /* Planets.swift in Sources */,
+				47845B0F775DF1068BC2955E /* QuickStartView.swift in Sources */,
+				B9A66609CA925CD19A03FD7E /* SettingsView.swift in Sources */,
+				ED7EAC35A72BB703C0129A78 /* SkyMath.swift in Sources */,
+				97689D7B13BC03A22B63315F /* SkyRenderer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7D2C846259C6C3018AAC33CF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 02DC949B913B14E08B54D3DC /* AstroHopper */;
+			targetProxy = 9B329203E63A68209D14881F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		31B3B653F888AF3EF9D098C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		3898EA76A147A28203F9C165 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 439DFSB44F;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AstroHopper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopper;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		6D682DEA0B113C3DDACB91E7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopperTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AstroHopper.app/AstroHopper";
+			};
+			name = Debug;
+		};
+		700D81B31F124D2499B5F3A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopperTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AstroHopper.app/AstroHopper";
+			};
+			name = Release;
+		};
+		89630F4F4F1D3EFB5CC7EC7C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.11;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F5723C562B8BFE80D8527CAE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 439DFSB44F;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AstroHopper/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopper;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3B87868FCFB075827378E514 /* Build configuration list for PBXProject "AstroHopper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89630F4F4F1D3EFB5CC7EC7C /* Debug */,
+				31B3B653F888AF3EF9D098C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AD80514456A494A28FEEEC7D /* Build configuration list for PBXNativeTarget "AstroHopperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D682DEA0B113C3DDACB91E7 /* Debug */,
+				700D81B31F124D2499B5F3A4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EC553F21D8FD361582ECDBAD /* Build configuration list for PBXNativeTarget "AstroHopper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3898EA76A147A28203F9C165 /* Debug */,
+				F5723C562B8BFE80D8527CAE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1EF829FE3F1079656BA205D6 /* Project object */;
+}

@@ -10,31 +10,33 @@ For development you will need:
 
 1. python3
 2. python-markdown for converting manual
+3. git submodules initialized: `git submodule update --init`
 
 Following files are used:
 
-- The main code is located in starhopper.html
-- README.md - manual - it is converted to html and embedded in the app
-- `create_data.py` generates jsdb.js - JSON/JavaScript database of all the objects:
+- The main code is located in `astrohopper.html`
+- `README.md` - manual - it is converted to html and embedded in the app
+- `create_data.py` generates `jsdb.js` - JSON/JavaScript database of all the objects:
   stars, constellations and constellation lines, deep space objects
 - `deploy.py` calls `create_data.py`, converts `README.md` to manual 
-  and embeds all external JS code, PNGs and and manual into single HTML file `astrohopper_deploy.html`
-
-  It also generates astrohopper.py - a simple server for development. 
+  and embeds all external JS code, PNGs and manual into single HTML file `astrohopper_deploy.html`.
+  It also generates `sw_deploy.js` - the service worker with the version embedded.
+- `pyserver.py` - a simple HTTPS server for development that serves `astrohopper_deploy.html` on port 8443
 
 Development cycle:
 
 1. Do any modifications
-2. Run deploy.py /path/to/www-data
+2. Run `python3 deploy.py` (or `python3 deploy.py /path/to/www-data` to also copy the files to a web server directory)
+3. Run `python3 pyserver.py`
 4. Test it over `https://Your-IP-Address:8443/`
 
 # Developers notes:
 
-In order to include new JS code put it into astrohopper.js in following exact format:
+In order to include new JS code put it into `astrohopper.html` in following exact format:
 
     <script src="path/to/new/js/file.js"></script>
 
-In ordder to include new css image use 
+In order to include new css image use 
 
     url(file-name.png)
 

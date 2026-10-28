@@ -1,5 +1,10 @@
 jsdb.js
 lighty.conf
-skyhopper_deploy.html
-skyhopper.py
+astrohopper_deploy.html
+sw_deploy.js
 manual.html
+ios/AstroHopper/Generated/
+xcuserdata/
+*.xcuserstate
+__pycache__/
+.DS_Store

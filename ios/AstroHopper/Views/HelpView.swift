@@ -1,0 +1,126 @@
+import SwiftUI
+
+/// Renders the bundled Help.md: headings, paragraphs, bullet/numbered lists and
+/// indented code blocks, with inline Markdown inside each block.
+struct HelpView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private enum Block: Hashable {
+        case heading(Int, String)
+        case paragraph(String)
+        case bullet(String)
+        case numbered(String, String)
+        case code(String)
+    }
+
+    private let blocks: [Block] = {
+        guard let url = Bundle.main.url(forResource: "Help", withExtension: "md"),
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+        return HelpView.parse(text)
+    }()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                        view(for: block)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(Color.black)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("X") { dismiss() }.buttonStyle(.hopperSquare)
+                }
+            }
+            .toolbarBackground(.black, for: .navigationBar)
+        }
+        .font(.system(size: 4 * pointsPerMM))
+        .foregroundStyle(Color.ui)
+        .tint(Color.ui)
+        .preferredColorScheme(.dark)
+    }
+
+    @ViewBuilder
+    private func view(for block: Block) -> some View {
+        switch block {
+        case let .heading(level, text):
+            inline(text)
+                .font(.system(size: (level == 1 ? 7 : level == 2 ? 5.5 : 4.5) * pointsPerMM, weight: .bold))
+                .padding(.top, 8)
+        case let .paragraph(text):
+            inline(text)
+        case let .bullet(text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("•")
+                inline(text)
+            }
+            .padding(.leading, 8)
+        case let .numbered(n, text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(n + ".")
+                inline(text)
+            }
+            .padding(.leading, 8)
+        case let .code(text):
+            Text(text)
+                .font(.system(size: 3.5 * pointsPerMM, design: .monospaced))
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.ui.opacity(0.6), lineWidth: 1))
+        }
+    }
+
+    private func inline(_ markdown: String) -> Text {
+        let attributed = (try? AttributedString(
+            markdown: markdown,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(markdown)
+        return Text(attributed)
+    }
+
+    private static func parse(_ text: String) -> [Block] {
+        var blocks: [Block] = []
+        var paragraph: [String] = []
+        var code: [String] = []
+
+        func flush() {
+            if !paragraph.isEmpty {
+                blocks.append(.paragraph(paragraph.joined(separator: " ")))
+                paragraph = []
+            }
+            if !code.isEmpty {
+                blocks.append(.code(code.joined(separator: "\n")))
+                code = []
+            }
+        }
+
+        for line in text.components(separatedBy: "\n") {
+            // indented block after a blank line (list items are single lines)
+            if line.hasPrefix("    ") && paragraph.isEmpty {
+                code.append(String(line.dropFirst(4)))
+                continue
+            }
+            if !code.isEmpty { flush() }
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty {
+                flush()
+            } else if let m = trimmed.wholeMatch(of: /(#{1,6})\s+(.*)/) {
+                flush()
+                blocks.append(.heading(m.1.count, String(m.2)))
+            } else if let m = line.wholeMatch(of: /[-*]\s+(.*)/) {
+                flush()
+                blocks.append(.bullet(String(m.1)))
+            } else if let m = line.wholeMatch(of: /(\d+)\.\s+(.*)/) {
+                flush()
+                blocks.append(.numbered(String(m.1), String(m.2)))
+            } else {
+                paragraph.append(line)
+            }
+        }
+        flush()
+        return blocks
+    }
+}
