@@ -51,6 +51,8 @@ targets:
       path: AstroHopper/Info.plist
       properties:
         CFBundleDisplayName: AstroHopper
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
           UIColorName: ""
         UIStatusBarHidden: true

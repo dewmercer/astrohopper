@@ -55,7 +55,6 @@ final class AppModel {
     var starMag: Int { didSet { defaults.set(starMag, forKey: "mag_mag_val") } }
     var dsoMag: Int { didSet { defaults.set(dsoMag, forKey: "mag_dso_level_val") } }
     var fontBoost: Int { didSet { defaults.set(fontBoost, forKey: "user_fs") } }
-    var smallUI: Bool { didSet { save(smallUI, "small_screen") } }
     var nightMode: Bool { didSet { save(nightMode, "NM_checked") } }
     var alignOnDSO: Bool { didSet { save(alignOnDSO, "align_dso_checked") } }
     var showStarNames: Bool { didSet { save(showStarNames, "show_star_names_checked") } }
@@ -74,14 +73,14 @@ final class AppModel {
     private(set) var countdown: Double?
     /// `global_use_gyro`: aligned on a star and tracking with the gyroscope.
     private(set) var aligned = false
-    private(set) var alignStatus = "Not Aligned"
-    private(set) var alignStatusTiny = "✗"
     private(set) var useCompass = false
     private(set) var compassAvailable = false
     private var alignMatrix = Mat3.identity
     private var alphaUserOffset = 0.0
     private var alphaDiff = 0.0
     @ObservationIgnored private var countdownTask: Task<Void, Never>?
+    /// Alignment in effect before `align()`, restored by `cancelAlign()`.
+    @ObservationIgnored private var previousAlignment: (aligned: Bool, matrix: Mat3, alphaDiff: Double, offset: Double, index: Int?)?
     @ObservationIgnored private var planetsComputedAt: (date: Date, lat: Double, lon: Double)?
 
     // MARK: Watch lists and user objects
@@ -103,7 +102,6 @@ final class AppModel {
         starMag = d.object(forKey: "mag_mag_val") as? Int ?? 4
         dsoMag = d.object(forKey: "mag_dso_level_val") as? Int ?? 5
         fontBoost = d.object(forKey: "user_fs") as? Int ?? 0
-        smallUI = flag("small_screen", false)
         nightMode = flag("NM_checked", false)
         alignOnDSO = flag("align_dso_checked", false)
         showStarNames = flag("show_star_names_checked", true)
@@ -197,10 +195,19 @@ final class AppModel {
         Sky.equatorialToENU(date: date, latDegrees: location.latitude, lonDegrees: location.longitude)
     }
 
-    private func setAligned(_ value: Bool, message: String? = nil, tiny: String? = nil) {
+    private func setAligned(_ value: Bool) {
         aligned = value
-        alignStatus = message ?? (value ? "Aligned" : "Not Aligned")
-        alignStatusTiny = tiny ?? (value ? "✓" : "✗")
+    }
+
+    /// Altitude/azimuth of the view and, with a target, how far to move:
+    /// positive `up` means move up, positive `right` means move right (degrees).
+    func pointing(at date: Date) -> (alt: Double, az: Double, up: Double?, right: Double?) {
+        let cam = cameraRays()
+        let (alt, az) = cam.altAz
+        guard let t = target else { return (alt, az, nil, nil) }
+        let ray = equatorialToENU(date) * t.eq
+        let x = -dot(cam.left, ray), y = dot(cam.top, ray), z = dot(cam.fwd, ray)
+        return (alt, az, atan2(y, z) * rad2deg, atan2(x, z) * rad2deg)
     }
 
     func compassMode() {
@@ -226,10 +233,30 @@ final class AppModel {
             // realign in manual mode: keep bearing
             alphaUserOffset = motion.gyroAlpha + alphaDiff - baseAlpha
         }
-        setAligned(false, message: "Select Star", tiny: "?")
+        previousAlignment = (aligned, alignMatrix, alphaDiff, alphaUserOffset, alignIndex)
+        setAligned(false)
         alignIndex = nil
         selectMode = .align
     }
+
+    /// Leaves alignment mode (or stops the countdown) and restores the
+    /// alignment that was in effect before.
+    func cancelAlign() {
+        guard selectMode != .target else { return }
+        countdownTask?.cancel()
+        countdown = nil
+        selectMode = .target
+        if let p = previousAlignment {
+            alignMatrix = p.matrix
+            alphaDiff = p.alphaDiff
+            alphaUserOffset = p.offset
+            alignIndex = p.index
+            setAligned(p.aligned)
+        }
+        previousAlignment = nil
+    }
+
+    var alignObject: SkyObject? { alignIndex.map { catalog[$0] } }
 
     /// Port of `resetAll()`.
     func resetAll() {
@@ -264,8 +291,6 @@ final class AppModel {
     private func startAlignCountdown(_ index: Int) {
         alignIndex = index
         selectMode = .countdown
-        alignStatus = ""
-        alignStatusTiny = ""
         countdownTask?.cancel()
         countdownTask = Task { [weak self] in
             var remaining = 3.0
@@ -298,6 +323,7 @@ final class AppModel {
         setAligned(true)
         alignIndex = index
         selectMode = .target
+        previousAlignment = nil
     }
 
     /// Horizontal drag in manual mode moves the map (`moveSky()`); in demo mode
@@ -341,6 +367,19 @@ final class AppModel {
     // MARK: Targets
 
     var target: SkyObject? { targetIndex.map { catalog[$0] } }
+
+    func selectTarget(_ index: Int?) {
+        targetIndex = index
+    }
+
+    func clearTarget() {
+        targetIndex = nil
+    }
+
+    /// Objects matching a search, best matches first.
+    func search(_ query: String) -> [Int] {
+        catalog.search(query)
+    }
 
     /// Port of `findTargetByName()`.
     @discardableResult
@@ -386,7 +425,18 @@ final class AppModel {
         selectWatchList(currentList <= -1 ? watchList.lists.count - 1 : currentList - 1)
     }
 
-    private func selectWatchList(_ index: Int) {
+    var currentWatchItem: WatchList.Item? {
+        guard currentList >= 0, currentItem >= 0 else { return nil }
+        return watchList.lists[currentList][currentItem]
+    }
+
+    /// Watch list position of the target, such as "2 of 6".
+    var watchListPosition: String? {
+        guard currentList >= 0, currentItem >= 0 else { return nil }
+        return "\(currentItem + 1) of \(watchList.lists[currentList].count)"
+    }
+
+    func selectWatchList(_ index: Int) {
         if index < 0 || index >= watchList.lists.count {
             targetIndex = nil
             currentList = -1

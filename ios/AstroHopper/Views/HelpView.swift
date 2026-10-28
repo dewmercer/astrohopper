@@ -3,7 +3,7 @@ import SwiftUI
 /// Renders the bundled Help.md: headings, paragraphs, bullet/numbered lists and
 /// indented code blocks, with inline Markdown inside each block.
 struct HelpView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) private var theme
 
     private enum Block: Hashable {
         case heading(Int, String)
@@ -20,28 +20,17 @@ struct HelpView: View {
     }()
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                        view(for: block)
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .background(Color.black)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("X") { dismiss() }.buttonStyle(.hopperSquare)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                    view(for: block)
                 }
             }
-            .toolbarBackground(.black, for: .navigationBar)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.system(size: 4 * pointsPerMM))
-        .foregroundStyle(Color.ui)
-        .tint(Color.ui)
-        .preferredColorScheme(.dark)
+        .background(theme.night ? Color.black : nil)
+        .themedTitle("User Guide", theme)
     }
 
     @ViewBuilder
@@ -49,13 +38,13 @@ struct HelpView: View {
         switch block {
         case let .heading(level, text):
             inline(text)
-                .font(.system(size: (level == 1 ? 7 : level == 2 ? 5.5 : 4.5) * pointsPerMM, weight: .bold))
-                .padding(.top, 8)
+                .font(level == 1 ? .largeTitle.bold() : level == 2 ? .title2.bold() : .headline)
+                .padding(.top, level == 1 ? 0 : 12)
         case let .paragraph(text):
             inline(text)
         case let .bullet(text):
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text("•")
+                Text("•").foregroundStyle(theme.secondary)
                 inline(text)
             }
             .padding(.leading, 8)
@@ -67,10 +56,11 @@ struct HelpView: View {
             .padding(.leading, 8)
         case let .code(text):
             Text(text)
-                .font(.system(size: 3.5 * pointsPerMM, design: .monospaced))
-                .padding(8)
+                .font(.callout.monospaced())
+                .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.ui.opacity(0.6), lineWidth: 1))
+                .background(theme.night ? Color(red: 0.09, green: 0, blue: 0) : Color(.secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: 10))
         }
     }
 

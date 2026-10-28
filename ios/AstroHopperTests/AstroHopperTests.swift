@@ -244,11 +244,56 @@ struct ParsingTests {
 struct WikiButtonTests {
     @Test func wikiButtonShowsWhenOnlineWithNamedTarget() async throws {
         let model = AppModel()
+        model.nightMode = false
+        model.wikiMode = .dayOnly
         model.start()
         for _ in 0..<50 where !model.isOnline { try await Task.sleep(for: .milliseconds(100)) }
         #expect(model.isOnline)
         #expect(!model.isWikiAllowed)  // no target selected yet
         #expect(model.findTarget("M31"))
         #expect(model.isWikiAllowed)
+    }
+}
+
+struct SearchTests {
+    @Test func searchListsExactMatchFirstThenPrefixMatches() throws {
+        let c = try Catalog.loadBundled()
+        let results = c.search("m4")
+        #expect(results.first.map { c[$0].name } == "M4")
+        let names = results.compactMap { c[$0].name }
+        #expect(names.contains("M41") && names.contains("M42") && names.contains("M45"))
+        #expect(Set(results).count == results.count)
+        #expect(c.search("  ").isEmpty)
+        #expect(c.search("zzzz").isEmpty)
+    }
+
+    @Test func searchFindsOtherNames() throws {
+        let c = try Catalog.loadBundled()
+        #expect(c.search("orion nebula").map { c[$0].name }.contains("M42"))
+    }
+}
+
+@MainActor
+struct CancelAlignTests {
+    @Test func cancelRestoresPreviousAlignment() throws {
+        let model = AppModel()
+        let sirius = try #require(model.catalog.find("Sirius"))
+        model.align()
+        model.selectAlign(sirius)
+        let before = model.cameraRays().fwd
+
+        model.align()
+        #expect(!model.aligned && model.selectMode == .align)
+        model.cancelAlign()
+        #expect(model.aligned && model.selectMode == .target)
+        #expect(model.alignIndex == sirius)
+        #expect(length(model.cameraRays().fwd - before) < 1e-9)
+    }
+
+    @Test func cancelWithoutPriorAlignmentStaysUnaligned() {
+        let model = AppModel()
+        model.align()
+        model.cancelAlign()
+        #expect(!model.aligned && model.selectMode == .target && model.alignIndex == nil)
     }
 }

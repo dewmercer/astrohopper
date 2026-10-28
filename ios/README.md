@@ -29,7 +29,8 @@ In the simulator, or on any device without a gyroscope, the app runs in demo mod
 ## Differences from the web app
 
 - **Sensors:** the app uses Core Motion's fused attitude in the true-north frame. Tilt comes from gravity, the absolute yaw replaces `webkitCompassHeading`, and a gyro-only yaw is integrated separately for tracking after alignment, so magnetic disturbances can't move an aligned map. Before alignment, the compass yaw uses true north instead of magnetic north.
-- **Screen:** the UI is locked to portrait so it doesn't rotate while the phone is on the tube, the screen doesn't auto-lock, and pinch zoom is on by default. There is no full-screen option, since the app is always full screen.
+- **Interface:** a native iOS design instead of the web page's controls. There's a Liquid Glass toolbar (Align, Search, Lists, Compass, Settings), a status capsule, and a target card showing how far to move. Search shows a list of results, Settings is a grouped form with separate editor screens, and the quick start is a swipeable sheet shown on first launch. Night mode swaps in red versions of controls that would otherwise draw white. The Small UI and full-screen options are gone; the layout adapts on its own.
+- **Screen:** the UI is locked to portrait so it doesn't rotate while the phone is on the tube, the screen doesn't auto-lock, and pinch zoom is on by default.
 - **Manual:** the in-app manual is `AstroHopper/Resources/Help.md`, an iOS version of the top-level `README.md`.
 - **Location:** the last known location is remembered between launches.
 - **User object parsing:** two bugs from the web version are fixed. Dec seconds were read from the minutes field, and a Unicode minus `−` produced NaN.

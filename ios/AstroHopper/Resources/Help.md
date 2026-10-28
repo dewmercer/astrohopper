@@ -8,13 +8,13 @@ The phone needs gyroscope and gravity sensors, and preferably a compass. AstroHo
 
 Attach the phone to the telescope so that the physical **top** of the phone points in the viewing direction. This is different from typical sky apps that simulate a camera view: in AstroHopper the screen is parallel to the viewing direction.
 
-Before you attach the phone, calibrate the compass by moving it in a figure-8 pattern. Calibration significantly improves compass accuracy. If the compass still does not work properly, tap the hand button to use manual mode.
+Before you attach the phone, calibrate the compass by moving it in a figure-8 pattern. Calibration significantly improves compass accuracy. If the compass still does not work properly, tap **Compass** in the toolbar to switch to manual mode.
 
 1. Point the telescope at an easily identifiable star or planet near the object you want to observe.
-2. Tap **Align** at the top left of the screen.
-3. Tap the star or planet you pointed at. A 3 second countdown starts so the telescope can stop shaking. Then the app is aligned on the selected object: "Aligned" is shown and a cross in the center of the screen shows where the telescope points.
-4. Tap the object you want to observe, or type its name in the search box. A line shows the direction to move the telescope, and the remaining altitude and azimuth changes are shown at the right and bottom of the screen.
-5. Move the telescope until these numbers are close to zero. The telescope now points at the requested object.
+2. Tap **Align** in the toolbar.
+3. Tap the star or planet you pointed at. A 3 second countdown starts so the telescope can stop shaking. Then the app is aligned on that object: the status at the top says "Aligned", and a cross in the center of the screen shows where the telescope points. Tap **Cancel** to keep the previous alignment instead.
+4. Tap the object you want to observe, or tap **Search** and find it by name. A line on the map shows which way to move the telescope, and the card at the bottom shows how far: up or down, and left or right.
+5. Move the telescope until the numbers on the card are close to zero. The telescope now points at the requested object.
 6. To move to the next object, repeat the alignment from step 1, because the phone's gyroscope loses accuracy over time and over multiple movements.
 
 Tutorial videos:
@@ -24,15 +24,15 @@ Tutorial videos:
 
 ## Troubleshooting
 
-**The sky looks different from what I expect.** Make sure Location Services are allowed for AstroHopper. Until a location is known, "No Geolocation" is shown. Check the coordinates at the bottom of the Settings screen.
+**The sky looks different from what I expect.** Make sure Location Services are allowed for AstroHopper. Until a location is known, "No Location" is shown at the top of the screen. Check the coordinates under Settings › Location and Sensors.
 
-**I move the telescope but only the altitude changes.** Your phone may not have a working compass. A crossed-out location icon is shown at the top right. Drag the map left or right until the azimuth is right, then align.
+**I move the telescope but only the altitude changes.** Your phone may not have a working compass; the toolbar then shows **No Compass**. Drag the map left or right until the azimuth is right, then align.
 
 **I pointed the telescope at a star but the phone seems to point elsewhere.** The compass may be significantly off. You can:
 
 1. Move the phone in a figure-8 pattern to calibrate the compass.
-2. Increase the field of view with `-` next to `∠60°`.
-3. Switch to manual azimuth mode with the hand button and drag the map until the star is visible.
+2. Zoom out with `−` on the right side of the screen to widen the field of view.
+3. Tap **Compass** to switch to manual mode, then drag the map until the star is visible.
 
 **The app stopped following the telescope in azimuth, or moves strangely.** The gyroscope lost accuracy. Try again. If it keeps happening:
 
@@ -43,44 +43,38 @@ Tutorial videos:
 
 ## Controls
 
-Left side, from top to bottom:
+At the top, the status shows whether the app is aligned, and on which object. Below it are the altitude and azimuth the telescope points at.
 
-- **Align** button and status: starts the alignment; then select the star or planet you are aligned on.
-- Field of view: change it with `-` and `+`.
-- When a watch list is selected, `<` and `>` browse its objects. The selected object's name is shown below.
-- **W** appears when a named object is selected and the phone is online, and opens the object's Wikipedia page.
+On the right, `+` and `−` change the field of view. You can also pinch the map.
 
-Right side:
+The toolbar at the bottom has:
 
-- Object search box: type an object name or code, such as `M31`, `NGC 7000` or `Vega`.
-- Hand button: switch to manual mode. Compass button: switch back to compass mode. A crossed-out location icon means no compass is available.
-- Gear button: Settings.
+- **Align**: start an alignment, then tap the star or planet the telescope points at. While aligning, this becomes **Cancel**.
+- **Search**: find an object by name or catalog number, such as `M31`, `NGC 7000`, `Vega` or `Jupiter`.
+- **Lists**: choose a watch list to browse.
+- **Compass** or **Manual**: switch between compass mode and manual mode, where you drag the map to set the azimuth. **No Compass** means the phone has none.
+- **Settings**.
 
-You can also pinch the map to change the field of view.
+When an object is selected, a card shows its name, type, magnitude, size and other names, and how far to move the telescope. With a watch list selected, `‹` and `›` on the card step through the list. Tap `✕` to clear the target.
 
 ## Settings
 
-- `↻`: reset alignment and target.
-- **Small UI**: smaller buttons; the field of view controls move to Settings. The Align button becomes `◎` with status `✓` aligned, `✗` not aligned, `?` select the alignment star.
-- **Night**: red night-vision mode for the sky map.
-- **Stars**: the faintest star magnitude to show and align on.
-- **DSO**: the faintest deep-sky object magnitude to show.
-- **List**: select and edit watch lists.
-- **Font**: make labels bigger.
-- Object search field.
-- **Align on DSO**: allow aligning on any object. Use with care, since it is hard to pinpoint the center of a big object such as an open cluster.
-- Object type filters, star names, pinch zoom and the startup tutorial.
-- **Wiki**: when the Wikipedia button is available: never, in day mode only, or always.
-- **User Objects**: show and edit your own objects.
-- Location and sensor information.
+- **Display**: Night mode (red only, to protect your dark adaptation), star names, pinch to zoom, and map label size.
+- **Faintest Magnitude**: the faintest stars and deep-sky objects to show. Only stars shown on the map can be used for alignment.
+- **Show on Map**: object types to show.
+- **Lists**: edit watch lists and your own objects.
+- **Alignment**: allow aligning on deep-sky objects. Use this with care, since it is hard to pinpoint the center of a large object such as an open cluster. You can also reset the alignment and target here.
+- **Wikipedia Button**: never, in day mode only, or always.
+- **Help**: this guide and the quick start.
+- **Location and Sensors**: your coordinates and raw sensor readings.
 
 ## Wikipedia Page Info
 
-When a named object is selected and the phone has a network connection, the **W** button appears. Tap it to open the Wikipedia page about the object. Without a connection the button is hidden. The page is not designed for night use and may be bright, so by default this is disabled in Night mode. Change this with the "Wiki" setting.
+When a named object is selected and the phone has a network connection, the target card shows a **Wikipedia** button. Tap it to open the object's Wikipedia page. Without a connection the button is hidden. Wikipedia pages are not designed for night use and may be bright, so by default the button is hidden in Night mode. Change this with Settings › Wikipedia Button.
 
 ## Watch List
 
-You can prepare a watch list in advance to browse it easily during the night. Open Settings and tap `[edit]` next to "List".
+You can prepare a watch list in advance to browse it easily during the night. Open Settings › Watch Lists.
 
 A watch list is a list of object names separated by spaces, new lines or commas, for example:
 
@@ -98,11 +92,11 @@ You can add a comment between `(` and `)` to explain an object. It is shown when
 
 If you add a comment or use a name that contains spaces, use a comma `,` as the separator.
 
-Select a list with `<` and `>` in Settings. Then two buttons, `<` and `>`, appear on the main screen under the Align button to browse its objects. The lists are saved on the phone.
+Choose a list from **Lists** in the toolbar. Its first object becomes the target, and `‹` and `›` on the target card step through the list. The lists are saved on the phone.
 
 ## User Objects
 
-The database does not contain every star or deep-sky object. You can add your own under "User Objects" in Settings.
+The database does not contain every star or deep-sky object. You can add your own under Settings › User Objects.
 
 User objects use CSV format: the first column is the object name, the second its right ascension (RA) and the third its declination (DEC). RA and DEC can be decimal degrees (0 to 360 for RA, -90 to +90 for DEC) or hours/degrees with minutes and optional seconds, separated by spaces, `:` or symbols such as `h`, `m`, `s`, `d`:
 

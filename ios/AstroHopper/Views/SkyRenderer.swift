@@ -21,8 +21,8 @@ struct SkyRenderer {
 
     private var style: SkyStyle { model.nightMode ? .night : .day }
 
-    private func font(_ mm: Double, serif: Bool = false) -> Font {
-        .system(size: (mm + Double(model.fontBoost)) * pointsPerMM, design: serif ? .serif : .default)
+    private func font(_ mm: Double) -> Font {
+        .system(size: (mm + Double(model.fontBoost)) * pointsPerMM)
     }
 
     func draw(_ ctx: inout GraphicsContext) {
@@ -71,7 +71,6 @@ struct SkyRenderer {
             plotCross(ctx: &ctx)
         }
         plotLines(toCamera: toCamera, proj: proj, ctx: &ctx)
-        plotAltAz(cam, ctx: &ctx)
         model.hitTargets.items = targets
     }
 
@@ -192,8 +191,8 @@ struct SkyRenderer {
         ctx.stroke(path, with: .color(style.cross), lineWidth: 3)
     }
 
-    /// Port of `plotBearing()`: a line from the center toward the target plus
-    /// the up/down and left/right angles still to move.
+    /// Port of `plotBearing()`: a line from the center toward the target. The
+    /// angles still to move are shown on the target card.
     private func plotBearing(_ xyz: Vec3, proj: Projection, ctx: inout GraphicsContext) {
         let cx = size.width / 2, cy = size.height / 2
         var path = Path(ellipseIn: CGRect(x: cx - 10, y: cy - 10, width: 20, height: 20))
@@ -211,20 +210,5 @@ struct SkyRenderer {
             path.addLine(to: CGPoint(x: cx + dx * len, y: cy + dy * len))
         }
         ctx.stroke(path, with: .color(style.bearing), lineWidth: 5)
-
-        let updn = (dy > 0 ? "Down" : "Up") + " " + String(format: "%.1f°", abs(atan2(-xyz.y, xyz.z) * rad2deg))
-        let left = (dx > 0 ? "Right" : "Left") + " " + String(format: "%.1f°", abs(atan2(xyz.x, xyz.z) * rad2deg))
-        let f = font(6, serif: true)
-        ctx.draw(Text(updn).font(f).foregroundStyle(style.bearing), at: CGPoint(x: size.width - 5, y: cy), anchor: .trailing)
-        ctx.draw(Text(left).font(f).foregroundStyle(style.bearing), at: CGPoint(x: cx, y: size.height - 5), anchor: .bottom)
-    }
-
-    private func plotAltAz(_ cam: CameraRays, ctx: inout GraphicsContext) {
-        let (alt, az) = cam.altAz
-        let f = font(5)
-        ctx.draw(Text("Alt:" + String(format: "%.1f", alt)).font(f).foregroundStyle(style.altaz),
-                 at: CGPoint(x: size.width - 5, y: size.height - 5), anchor: .bottomTrailing)
-        ctx.draw(Text("Az:" + String(format: "%.1f", az)).font(f).foregroundStyle(style.altaz),
-                 at: CGPoint(x: 5, y: size.height - 5), anchor: .bottomLeading)
     }
 }

@@ -116,6 +116,9 @@ struct Catalog {
 
     var count: Int { objects.count }
 
+    /// Index of the first user object (they follow the bundled catalog).
+    var userObjectsStart: Int { baseCount }
+
     subscript(i: Int) -> SkyObject { objects[i] }
 
     var baseNames: Set<String> { Set(names[0..<baseNameCount]) }
@@ -144,6 +147,21 @@ struct Catalog {
             objects.append(o)
         }
         typeEnd[.user] = objects.count
+    }
+
+    /// Objects whose name or other name starts with the query: exact matches
+    /// first, then the rest in catalog order (brightest first within a type).
+    func search(_ query: String, limit: Int = 100) -> [Int] {
+        let q = normalizeName(query.trimmingCharacters(in: .whitespaces))
+        guard !q.isEmpty else { return [] }
+        var exact: [Int] = [], prefix: [Int] = []
+        var seen = Set<Int>()
+        for (i, candidate) in names.enumerated() where candidate.hasPrefix(q) {
+            let index = nameIndex[i]
+            guard seen.insert(index).inserted else { continue }
+            if candidate == q { exact.append(index) } else { prefix.append(index) }
+        }
+        return Array((exact + prefix).prefix(limit))
     }
 
     /// Port of `findTargetByName()`: an exact match wins, otherwise a prefix
