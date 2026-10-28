@@ -239,3 +239,16 @@ struct ParsingTests {
         #expect(Format.wikipediaSearchTerm("Sirius") == "Sirius")
     }
 }
+
+@MainActor
+struct WikiButtonTests {
+    @Test func wikiButtonShowsWhenOnlineWithNamedTarget() async throws {
+        let model = AppModel()
+        model.start()
+        for _ in 0..<50 where !model.isOnline { try await Task.sleep(for: .milliseconds(100)) }
+        #expect(model.isOnline)
+        #expect(!model.isWikiAllowed)  // no target selected yet
+        #expect(model.findTarget("M31"))
+        #expect(model.isWikiAllowed)
+    }
+}

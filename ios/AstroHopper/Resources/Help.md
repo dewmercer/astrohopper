@@ -48,7 +48,7 @@ Left side, from top to bottom:
 - **Align** button and status: starts the alignment; then select the star or planet you are aligned on.
 - Field of view: change it with `-` and `+`.
 - When a watch list is selected, `<` and `>` browse its objects. The selected object's name is shown below.
-- **W** appears when a named object is selected and opens its Wikipedia page (needs a network connection).
+- **W** appears when a named object is selected and the phone is online, and opens the object's Wikipedia page.
 
 Right side:
 
@@ -76,7 +76,7 @@ You can also pinch the map to change the field of view.
 
 ## Wikipedia Page Info
 
-When the **W** button appears, tap it to open the Wikipedia page about the selected object. The page is not designed for night use and may be bright, so by default this is disabled in Night mode. Change this with the "Wiki" setting.
+When a named object is selected and the phone has a network connection, the **W** button appears. Tap it to open the Wikipedia page about the object. Without a connection the button is hidden. The page is not designed for night use and may be bright, so by default this is disabled in Night mode. Change this with the "Wiki" setting.
 
 ## Watch List
 

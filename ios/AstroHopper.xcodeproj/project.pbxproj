@@ -49,7 +49,7 @@
 		817185F46D37298F3E9D5241 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
 		8A46549D52344609FC852876 /* AstroHopperTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AstroHopperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
-		96222DE4774DC40B8D956FBC /* AstroHopper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AstroHopper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		96222DE4774DC40B8D956FBC /* AstroHopper.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AstroHopper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		987A9D2D603FA5ABD4FEA7A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vsop87a.json; sourceTree = "<group>"; };
 		B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperTests.swift; sourceTree = "<group>"; };
@@ -197,8 +197,11 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					02DC949B913B14E08B54D3DC = {
+						DevelopmentTeam = 439DFSB44F;
+					};
 					8A62BE7485E3714B3AF809A2 = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = 439DFSB44F;
 					};
 				};
 			};
@@ -343,7 +346,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 439DFSB44F;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -371,7 +374,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 439DFSB44F;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AstroHopper/Info.plist;
@@ -379,7 +381,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopper;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davemercer.AstroHopper;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -395,7 +397,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopperTests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davemercer.AstroHopperTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AstroHopper.app/AstroHopper";
@@ -412,7 +414,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopperTests;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davemercer.AstroHopperTests;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AstroHopper.app/AstroHopper";
@@ -455,7 +457,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 439DFSB44F;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -490,7 +492,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 439DFSB44F;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AstroHopper/Info.plist;
@@ -498,7 +499,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.AstroHopper;
+				PRODUCT_BUNDLE_IDENTIFIER = org.davemercer.AstroHopper;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

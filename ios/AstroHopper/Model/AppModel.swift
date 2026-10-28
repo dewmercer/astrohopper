@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observation
 import SwiftUI
 
@@ -44,6 +45,9 @@ final class AppModel {
     @ObservationIgnored private let planets: Planets?
     @ObservationIgnored let hitTargets = HitTargets()
     @ObservationIgnored private let defaults = UserDefaults.standard
+    /// Reads the device's connection state; it does not contact any server.
+    @ObservationIgnored private let pathMonitor = NWPathMonitor()
+    private(set) var isOnline = false
 
     // MARK: Settings (persisted under the web app's localStorage key names)
 
@@ -135,6 +139,10 @@ final class AppModel {
     // MARK: Startup
 
     func start() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            MainActor.assumeIsolated { self?.isOnline = path.status == .satisfied }
+        }
+        pathMonitor.start(queue: .main)
         location.start()
         motion.start(trueNorth: location.authorized)
         compassAvailable = motion.hasCompass
@@ -341,8 +349,9 @@ final class AppModel {
         return targetIndex != nil
     }
 
+    /// The Wikipedia button needs a named target and a network connection.
     var isWikiAllowed: Bool {
-        guard target?.name != nil else { return false }
+        guard isOnline, target?.name != nil else { return false }
         switch wikiMode {
         case .never: return false
         case .dayOnly: return !nightMode
