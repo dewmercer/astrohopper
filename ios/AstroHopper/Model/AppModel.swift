@@ -63,6 +63,21 @@ final class AppModel {
     var showTutorial: Bool { didSet { defaults.set(showTutorial ? "0" : "1", forKey: "qs_hide_v2") } }
     var wikiMode: WikiMode { didSet { defaults.set(wikiMode.rawValue, forKey: "opt_wiki_info_opt") } }
     var shown: [ObjectType: Bool] { didSet { for (t, v) in shown { save(v, "\(t.rawValue)_checked") } } }
+    /// Altitude limits in degrees, nil for none. Objects outside them can't
+    /// be selected, and a connected telescope never points outside them.
+    var minAltitude: Double? {
+        didSet {
+            defaults.set(minAltitude, forKey: "alt_min")
+            telescope.minAltitude = max(minAltitude ?? 0, 0)
+        }
+    }
+    var maxAltitude: Double? {
+        didSet {
+            defaults.set(maxAltitude, forKey: "alt_max")
+            telescope.maxAltitude = maxAltitude
+        }
+    }
+
     /// Stars per alignment: 1 is the web app's single-star alignment.
     var alignStarsRequired: Int { didSet { defaults.set(alignStarsRequired, forKey: "align_stars") } }
     var finderCircle: Bool { didSet { defaults.set(finderCircle, forKey: "finder_circle") } }
@@ -144,6 +159,10 @@ final class AppModel {
         showTutorial = d.string(forKey: "qs_hide_v2") != "1"
         wikiMode = WikiMode(rawValue: d.string(forKey: "opt_wiki_info_opt") ?? "") ?? .dayOnly
         alignStarsRequired = min(3, max(1, d.object(forKey: "align_stars") as? Int ?? 1))
+        // limits set on the telescope screen before they became general settings
+        let oldMax = d.object(forKey: "scope_max_alt") as? Double
+        minAltitude = d.object(forKey: "alt_min") as? Double ?? d.object(forKey: "scope_min_alt") as? Double
+        maxAltitude = d.object(forKey: "alt_max") as? Double ?? oldMax.flatMap { $0 < 90 ? $0 : nil }
         finderCircle = d.object(forKey: "finder_circle") as? Bool ?? false
         finderFOV = d.object(forKey: "finder_fov") as? Double ?? 6
         eyepieceCircle = d.object(forKey: "eyepiece_circle") as? Bool ?? false
@@ -170,6 +189,9 @@ final class AppModel {
         let user = UserObjects.parse(userObjectsText, existing: catalog.baseNames).0
         catalog.setUserObjects(user)
         watchList = WatchList.parse(watchListText) { [catalog] in catalog.contains(normalizedName: $0) }.0
+        telescope.fallbackAltitude = { [weak self] in self?.cameraRays().altAz.alt }
+        telescope.minAltitude = max(minAltitude ?? 0, 0)
+        telescope.maxAltitude = maxAltitude
     }
 
     private func save(_ v: Bool, _ key: String) {
@@ -319,7 +341,11 @@ final class AppModel {
             let o = catalog[i]
             guard o.name != nil, o.name != "Moon", shown[o.type] == true else { continue }
             guard (o.type == .star && o.mag <= maxMag) || o.type == .planet else { continue }
-            candidates.append((i, toENU * o.eq, o.mag))
+            let enu = toENU * o.eq
+            // keep a little inside the limits, so the star can be reached and centered
+            if let max = maxAltitude, enu.z > sin((max - 2) * deg2rad) { continue }
+            if let min = minAltitude, enu.z < sin((min + 2) * deg2rad) { continue }
+            candidates.append((i, enu, o.mag))
         }
         suggestedAlignIndex = Alignment.suggest(candidates: candidates, used: alignSamples.map(\.star))
     }
@@ -381,9 +407,20 @@ final class AppModel {
     /// Tap on the map at a screen point (selectionEvent).
     func tap(x: Double, y: Double) {
         let index = hitTargets.nearest(x: x, y: y)
+        // an object outside the altitude limits selects nothing
+        if let index, isOutsideLimits(index) {
+            switch selectMode {
+            case .target: targetIndex = nil
+            case .confirm:
+                alignIndex = nil
+                selectMode = .align
+            case .align: break
+            }
+            return
+        }
         switch selectMode {
         case .target:
-            targetIndex = index
+            selectTarget(index)
         case .align, .confirm:
             // while confirming, tapping another star changes the choice
             if let index { chooseAlignStar(index) }
@@ -393,6 +430,7 @@ final class AppModel {
     /// Replaces `selectAlignWithTimer()`: the chosen star waits for the user
     /// to confirm that the telescope is centered on it.
     func chooseAlignStar(_ index: Int) {
+        guard !isOutsideLimits(index) else { return }
         alignIndex = index
         selectMode = .confirm
     }
@@ -523,7 +561,30 @@ final class AppModel {
     var target: SkyObject? { targetIndex.map { catalog[$0] } }
 
     func selectTarget(_ index: Int?) {
+        if let index, isOutsideLimits(index) { return }
         targetIndex = index
+    }
+
+    /// Why an object can't be selected right now, or nil if it can: objects
+    /// outside the altitude limits can't be targets or alignment stars.
+    func limitNote(_ index: Int, date: Date = Date()) -> String? {
+        let z = (equatorialToENU(date) * catalog[index].eq).z
+        if let max = maxAltitude, z > sin(max * deg2rad) { return "Above the \(Int(max))° maximum altitude" }
+        if let min = minAltitude, z < sin(min * deg2rad) { return "Below the \(Int(min))° minimum altitude" }
+        return nil
+    }
+
+    func isOutsideLimits(_ index: Int, date: Date = Date()) -> Bool {
+        limitNote(index, date: date) != nil
+    }
+
+    /// Why the current watch list item was skipped, if it is outside the limits.
+    private(set) var watchItemLimitNote: String?
+
+    private func findWatchTarget(_ name: String) {
+        findTarget(name)
+        watchItemLimitNote = targetIndex.flatMap { limitNote($0) }
+        if watchItemLimitNote != nil { targetIndex = nil }
     }
 
     func clearTarget() {
@@ -599,7 +660,7 @@ final class AppModel {
         } else {
             currentList = index
             currentItem = 0
-            findTarget(watchList.lists[index][0].name)
+            findWatchTarget(watchList.lists[index][0].name)
             currentItemTarget = targetIndex
         }
     }
@@ -611,7 +672,7 @@ final class AppModel {
         // if another object was selected meanwhile, first return to the current item
         let step = currentItemTarget != targetIndex ? 0 : offset
         currentItem = (currentItem + step + list.count) % list.count
-        findTarget(list[currentItem].name)
+        findWatchTarget(list[currentItem].name)
         currentItemTarget = targetIndex
     }
 

@@ -109,15 +109,20 @@ struct TelescopeSettingsView: View {
                 }
                 .themedRow(theme)
 
-                Section("GoTo") {
+                Section {
                     Toggle("Track After GoTo", isOn: Binding(get: { scope.trackAfterGoto },
                                                              set: { scope.setTracking($0) }))
-                    ValueStepper(title: "Altitude Limit", value: "\(Int(scope.minAltitude))°",
-                                 decrement: { scope.minAltitude = max(0, scope.minAltitude - 5) },
-                                 increment: { scope.minAltitude = min(45, scope.minAltitude + 5) })
                     ValueStepper(title: "Slew Pad Speed", value: "\(scope.slewRate)",
                                  decrement: { scope.slewRate = max(1, scope.slewRate - 1) },
                                  increment: { scope.slewRate = min(9, scope.slewRate + 1) })
+                } header: {
+                    Text("GoTo")
+                } footer: {
+                    Text("""
+                    The telescope stays within Settings › Altitude Limits: goto and tracking refuse objects \
+                    outside them, and the slew pad stops before the maximum altitude. Before the mount is \
+                    aligned, the slew pad uses the phone's altitude, so keep the phone on the tube.
+                    """)
                 }
                 .themedRow(theme)
             }

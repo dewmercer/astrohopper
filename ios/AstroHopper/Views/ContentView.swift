@@ -264,8 +264,15 @@ private struct TargetCard: View {
                 header(target)
                 DirectionReadout()
             } else if let item = model.currentWatchItem {
-                Label("\(item.name) is not in the catalog", systemImage: "questionmark.circle")
-                    .foregroundStyle(theme.secondary)
+                Group {
+                    if let note = model.watchItemLimitNote {
+                        Label("\(item.name): \(note.prefix(1).lowercased() + note.dropFirst())",
+                              systemImage: "arrow.up.and.down.text.horizontal")
+                    } else {
+                        Label("\(item.name) is not in the catalog", systemImage: "questionmark.circle")
+                    }
+                }
+                .foregroundStyle(theme.secondary)
             }
             if model.currentList >= 0 || model.isWikiAllowed {
                 actions
@@ -329,7 +336,7 @@ private struct TargetCard: View {
                 } label: {
                     Label("GoTo", systemImage: "scope")
                 }
-                .disabled(!scope.isAligned)
+                .disabled(!scope.isAligned || model.isOutsideLimits(index))
             }
             Button {
                 scope.setTracking(!scope.trackAfterGoto)

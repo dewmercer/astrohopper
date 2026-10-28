@@ -43,6 +43,26 @@ struct SettingsView: View {
                 }
                 .themedRow(theme)
 
+                Section {
+                    ValueStepper(title: "Maximum Altitude", value: model.maxAltitude.map { "\(Int($0))°" } ?? "None",
+                                 decrement: {
+                                     let next = (model.maxAltitude ?? 90) - 5
+                                     if next >= max(30, (model.minAltitude ?? 0) + 10) { model.maxAltitude = next }
+                                 },
+                                 increment: { model.maxAltitude = model.maxAltitude.flatMap { $0 >= 85 ? nil : $0 + 5 } })
+                    ValueStepper(title: "Minimum Altitude", value: model.minAltitude.map { "\(Int($0))°" } ?? "None",
+                                 decrement: { model.minAltitude = model.minAltitude.flatMap { $0 <= 0 ? nil : $0 - 5 } },
+                                 increment: {
+                                     let next = (model.minAltitude ?? -5) + 5
+                                     if next <= min(45, (model.maxAltitude ?? 90) - 10) { model.minAltitude = next }
+                                 })
+                } header: {
+                    Text("Altitude Limits")
+                } footer: {
+                    Text("Objects higher than the maximum or lower than the minimum can't be selected, and dashed circles on the map show the limits. A connected telescope never points outside them. Use them for what your telescope can reach, such as a tube that hits its mount near the zenith, or trees on the horizon.")
+                }
+                .themedRow(theme)
+
                 Section("Show on Map") {
                     Toggle("Planets", isOn: shown(.planet))
                     Toggle("Constellations", isOn: shown(.constellation))

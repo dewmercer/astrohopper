@@ -6,6 +6,8 @@ enum TelescopeError: LocalizedError, Equatable {
     case connectionFailed(String)
     case timeout
     case belowHorizon
+    case aboveLimit
+    case pathAboveLimit
     case notAligned
 
     var errorDescription: String? {
@@ -14,6 +16,8 @@ enum TelescopeError: LocalizedError, Equatable {
         case let .connectionFailed(reason): "Couldn't connect to the telescope: \(reason)"
         case .timeout: "The telescope didn't respond."
         case .belowHorizon: "That object is below the telescope's altitude limit."
+        case .aboveLimit: "That object is above the telescope's maximum altitude."
+        case .pathAboveLimit: "The slew would pass above the telescope's maximum altitude."
         case .notAligned: "Align the telescope first."
         }
     }

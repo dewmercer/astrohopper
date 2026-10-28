@@ -46,6 +46,7 @@ struct SearchView: View {
 
     private func row(_ index: Int) -> some View {
         let obj = model.catalog[index]
+        let limitNote = model.limitNote(index)
         return Button {
             select(index)
         } label: {
@@ -59,16 +60,24 @@ struct SearchView: View {
                         .font(.caption)
                         .foregroundStyle(theme.secondary)
                         .lineLimit(1)
+                    if let limitNote {
+                        Text(limitNote)
+                            .font(.caption)
+                            .foregroundStyle(theme.secondary)
+                    }
                 }
                 Spacer()
                 if index == model.targetIndex {
                     Image(systemName: "checkmark").foregroundStyle(theme.accent)
                 }
             }
+            .opacity(limitNote != nil ? 0.45 : 1)
         }
+        .disabled(limitNote != nil)
     }
 
     private func select(_ index: Int) {
+        guard !model.isOutsideLimits(index) else { return }
         model.selectTarget(index)
         dismiss()
     }

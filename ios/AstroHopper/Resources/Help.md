@@ -43,7 +43,9 @@ If your Celestron mount has a SkyPortal WiFi module, AstroHopper can slew it to 
 3. **Align.** Align as usual. Each star you confirm with **Aligned** also aligns the mount. Center each star with the arrows on the alignment card (hold an arrow to move; the tortoise and hare change the speed) or with the hand controller. Don't push the tube by hand or loosen the clutches: the mount would lose track of where it points. With an equatorial mount, use 2 or 3 stars, so the app can learn which way each axis turns. Between stars, **Slew There** moves the telescope to the suggested star.
 4. **GoTo.** Select an object and tap **GoTo** on its card. The telescope slews and makes a final precise approach. **Stop** halts a slew. **Track** on the card turns tracking on or off: when it's on, the telescope keeps following the object after it arrives; turning it off leaves the telescope where it is. **Adjust** shows the arrows to re-center the object; while tracking, the correction is kept.
 
-A square marked "Scope" on the map shows where the telescope points. Goto refuses objects below the altitude limit (Settings › Telescope › Altitude Limit).
+A square marked "Scope" on the map shows where the telescope points.
+
+**Altitude limits.** Settings › Altitude Limits sets the highest and lowest altitude you can observe, with or without telescope control: for example, a tube that hits its mount near the zenith, or trees along the horizon. Dashed circles on the map show the limits. Objects outside them can't be selected as targets or alignment stars; tapping one selects nothing, and search shows them greyed out. A connected telescope never points outside the limits: goto refuses such objects and any slew whose path would cross the maximum, tracking stops if the object leaves the limits, and the slew pad stops the telescope before the maximum. You can always move back down. Before the mount is aligned, the slew pad uses the phone's altitude, so keep the phone on the tube.
 
 AstroHopper only talks to the WiFi module; nothing is sent to the internet. Keep the app open while tracking, since the app drives the motors.
 

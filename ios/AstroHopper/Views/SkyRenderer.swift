@@ -32,6 +32,8 @@ struct SkyRenderer {
 
         let cam = model.cameraRays()
         let camera = Mat3(r0: -cam.left, r1: cam.top, r2: cam.fwd)
+        // objects outside the altitude limits stay tappable, so that tapping
+        // one selects nothing rather than a neighbor (see AppModel.tap)
         let toCamera = camera * model.equatorialToENU(date)
         let proj = Projection(fovDegrees: model.fov, width: w, height: h)
         let catalog = model.catalog
@@ -81,6 +83,12 @@ struct SkyRenderer {
             plotCross(ctx: &ctx)
         }
         plotFieldCircles(proj: proj, ctx: &ctx)
+        if let max = model.maxAltitude {
+            plotAltitudeLimit(max, label: "\(Int(max))° maximum", camera: camera, proj: proj, ctx: &ctx)
+        }
+        if let min = model.minAltitude {
+            plotAltitudeLimit(min, label: "\(Int(min))° minimum", camera: camera, proj: proj, ctx: &ctx)
+        }
         if let scope = model.telescope.pointingENU {
             plotTelescope(camera * scope, proj: proj, ctx: &ctx)
         }
@@ -214,6 +222,34 @@ struct SkyRenderer {
                 ctx.draw(Text(label).font(font(2.5)).foregroundStyle(color),
                          at: CGPoint(x: cx + r * 0.71 + 3, y: cy - r * 0.71 - 3), anchor: .bottomLeading)
             }
+        }
+    }
+
+    /// An altitude limit: a dashed circle of constant altitude.
+    private func plotAltitudeLimit(_ limit: Double, label: String, camera: Mat3, proj: Projection,
+                                   ctx: inout GraphicsContext) {
+        let h = limit * deg2rad
+        var path = Path()
+        var penDown = false
+        var labelAt: CGPoint?
+        for step in 0...120 {
+            let a = Double(step) * 3 * deg2rad
+            let enu = Vec3(cos(h) * sin(a), cos(h) * cos(a), sin(h))
+            guard let p = proj.project(camera * enu, inFOV: false) else {
+                penDown = false
+                continue
+            }
+            let pt = CGPoint(x: p.x * size.width, y: p.y * size.height)
+            if penDown { path.addLine(to: pt) } else { path.move(to: pt) }
+            penDown = true
+            if labelAt == nil, pt.x > 40, pt.x < size.width - 120, pt.y > 140, pt.y < size.height - 260 {
+                labelAt = pt
+            }
+        }
+        ctx.stroke(path, with: .color(style.altaz.opacity(0.8)), style: StrokeStyle(lineWidth: 1.5, dash: [8, 6]))
+        if let labelAt {
+            ctx.draw(Text(label).font(font(2.5)).foregroundStyle(style.altaz),
+                     at: CGPoint(x: labelAt.x + 4, y: labelAt.y - 4), anchor: .bottomLeading)
         }
     }
 

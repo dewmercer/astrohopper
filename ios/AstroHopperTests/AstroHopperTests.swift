@@ -605,12 +605,14 @@ struct MountModelTests {
 
 /// A stand-in for the SkyPortal module: echoes every packet like the AUX
 /// bus does, then answers as the two motor controllers. Gotos arrive
-/// instantly.
+/// instantly; manual moves run at the mount's slew speeds.
 final class FakeSkyPortal: @unchecked Sendable {
     private let listener: NWListener
     private let queue = DispatchQueue(label: "fake-skyportal")
     private let lock = NSLock()
-    private var positions: [UInt8: UInt32] = [0x10: 0, 0x11: 0]
+    /// Axis angles in degrees, and manual motion as (degrees per second, since).
+    private var positions: [UInt8: Double] = [0x10: 0, 0x11: 0]
+    private var motion: [UInt8: (speed: Double, since: Date)] = [:]
     private(set) var commands: [AUX.Packet] = []
 
     init() throws {
@@ -635,11 +637,27 @@ final class FakeSkyPortal: @unchecked Sendable {
     func stop() { listener.cancel() }
 
     func setAxes(_ a1: Double, _ a2: Double) {
-        lock.withLock { positions = [0x10: MountModel.steps(degrees: a1), 0x11: MountModel.steps(degrees: a2)] }
+        lock.withLock {
+            positions = [0x10: a1, 0x11: a2]
+            motion = [:]
+        }
     }
 
     var axes: (Double, Double) {
-        lock.withLock { (MountModel.degrees(steps: positions[0x10]!), MountModel.degrees(steps: positions[0x11]!)) }
+        lock.withLock { (MountModel.wrap180(position(0x10)), MountModel.wrap180(position(0x11))) }
+    }
+
+    /// Call with the lock held.
+    private func position(_ axis: UInt8) -> Double {
+        let base = positions[axis] ?? 0
+        guard let m = motion[axis] else { return base }
+        return base + m.speed * Date().timeIntervalSince(m.since)
+    }
+
+    /// Call with the lock held.
+    private func settle(_ axis: UInt8) {
+        positions[axis] = position(axis)
+        motion[axis] = nil
     }
 
     func received(_ command: UInt8) -> Bool { lock.withLock { commands.contains { $0.command == command } } }
@@ -669,9 +687,16 @@ final class FakeSkyPortal: @unchecked Sendable {
         lock.withLock {
             commands.append(p)
             var data: [UInt8] = []
+            let axis = p.destination
             switch AUX.Command(rawValue: p.command) {
-            case .getPosition: data = AUX.encode(positions[p.destination] ?? 0)
-            case .gotoFast, .gotoSlow: positions[p.destination] = p.value
+            case .getPosition: data = AUX.encode(MountModel.steps(degrees: position(axis)))
+            case .gotoFast, .gotoSlow:
+                motion[axis] = nil
+                positions[axis] = MountModel.degrees(steps: p.value)
+            case .movePos, .moveNeg:
+                settle(axis)
+                let speed = TelescopeController.slewSpeed(rate: Int(p.value))
+                if speed > 0 { motion[axis] = (p.command == AUX.Command.movePos.rawValue ? speed : -speed, Date()) }
             case .slewDone: data = [0xFF]
             case .getVersion: data = [7, 11, 0, 0]
             default: break
@@ -774,6 +799,77 @@ struct TelescopeSessionTests {
         #expect(scope.targetName == "Test Star")
     }
 
+    /// Connects to a fake module, aligned on one star with the mount's
+    /// encoders reading true altitude and azimuth.
+    func alignedScope(_ fake: FakeSkyPortal, port: UInt16) async throws -> (TelescopeController, MountModel) {
+        let scope = TelescopeController()
+        scope.enabled = true
+        scope.connectionMode = .network
+        scope.networkHost = "127.0.0.1"
+        scope.mountType = .altAz
+        scope.minAltitude = 0
+        scope.port = port
+        scope.connect()
+        try await waitUntil { scope.state == .connected }
+        let truth = MountModel(type: .altAz, latitude: 32)
+        fake.setAxes(0, 20)
+        scope.addAlignmentStar(index: 0, star: truth.direction(0, 20), latitude: 32, restart: true)
+        try await waitUntil { scope.isAligned }
+        return (scope, truth)
+    }
+
+    @Test func gotoRefusesTargetsAboveTheLimit() async throws {
+        let fake = try FakeSkyPortal()
+        let port = try await fake.start()
+        defer { fake.stop() }
+        let (scope, truth) = try await alignedScope(fake, port: port)
+        let saved = scope.maxAltitude
+        defer {
+            scope.maxAltitude = saved
+            scope.disconnect()
+            scope.enabled = false
+        }
+        scope.maxAltitude = 40
+        let high = truth.direction(90, 50)
+        scope.goto(name: "High") { _ in high }
+        #expect(scope.activity == .idle && scope.lastError == TelescopeError.aboveLimit.localizedDescription)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(!fake.received(AUX.Command.gotoFast.rawValue))
+    }
+
+    @Test func slewPadStopsBelowTheLimit() async throws {
+        let fake = try FakeSkyPortal()
+        let port = try await fake.start()
+        defer { fake.stop() }
+        let (scope, _) = try await alignedScope(fake, port: port)
+        let saved = (scope.maxAltitude, scope.slewRate)
+        defer {
+            (scope.maxAltitude, scope.slewRate) = saved
+            scope.disconnect()
+            scope.enabled = false
+        }
+        scope.maxAltitude = 40
+        scope.slewRate = 9  // 4° per second
+        fake.setAxes(0, 30)
+        try await Task.sleep(for: .milliseconds(700))  // let a position poll see 30°
+        scope.startMove(.up)
+        try await waitUntil(.seconds(10)) { scope.activity == .idle }
+        try await Task.sleep(for: .milliseconds(300))
+        let alt = fake.axes.1
+        #expect(alt > 34 && alt < 40, "stopped at \(alt)°")
+        #expect(scope.lastError?.contains("maximum altitude") == true)
+
+        // moving back down is allowed
+        scope.clearError()
+        scope.slewRate = 7
+        scope.startMove(.down)
+        try await Task.sleep(for: .milliseconds(500))
+        scope.stopMove()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(fake.axes.1 < alt - 0.2)
+        #expect(scope.lastError == nil)
+    }
+
     @Test func reportsAMissingModule() async throws {
         let scope = TelescopeController()
         let saved = (scope.connectionMode, scope.networkHost)
@@ -783,5 +879,60 @@ struct TelescopeSessionTests {
         scope.port = 1  // nothing listens here
         scope.connect()
         try await waitUntil(.seconds(8)) { scope.state == .disconnected && scope.lastError != nil }
+    }
+}
+
+struct AltitudeLimitTests {
+    @Test func detectsAPathOverTheTop() {
+        let m = MountModel(type: .altAz, latitude: 32)
+        // a fork mount flipping the tube over the zenith: both ends at 60°
+        #expect(TelescopeController.pathExceeds(70, model: m, from: (0, 60), to: (0, 120)))
+        #expect(!TelescopeController.pathExceeds(70, model: m, from: (0, 30), to: (200, 65)))
+    }
+}
+
+@MainActor
+struct AltitudeLimitSelectionTests {
+    @Test func objectsOutsideTheLimitsCantBeSelected() throws {
+        let model = AppModel()
+        let saved = (model.minAltitude, model.maxAltitude, model.telescope.enabled)
+        defer { (model.minAltitude, model.maxAltitude, model.telescope.enabled) = saved }
+        model.telescope.enabled = false  // the limits don't need a telescope
+        model.minAltitude = nil
+        model.maxAltitude = 40
+        let toENU = model.equatorialToENU(Date())
+        let stars = (0..<model.catalog.count).filter { model.catalog[$0].type == .star && model.catalog[$0].name != nil }
+        let high = try #require(stars.first { (toENU * model.catalog[$0].eq).z > sin(45 * deg2rad) })
+        let low = try #require(stars.first {
+            let z = (toENU * model.catalog[$0].eq).z
+            return z > sin(5 * deg2rad) && z < sin(35 * deg2rad)
+        })
+        model.selectTarget(high)
+        #expect(model.targetIndex == nil)
+        model.selectTarget(low)
+        #expect(model.targetIndex == low)
+        model.align()
+        model.chooseAlignStar(high)
+        #expect(model.selectMode == .align)
+        // tapping an object above the limit selects nothing, not its neighbor
+        model.cancelAlign()
+        #expect(model.selectMode == .target)
+        model.selectTarget(low)
+        model.hitTargets.items = [(100, 100, high), (130, 100, low)]
+        model.tap(x: 102, y: 100)
+        #expect(model.targetIndex == nil)
+        model.tap(x: 128, y: 100)
+        #expect(model.targetIndex == low)
+
+        model.maxAltitude = nil
+        model.selectTarget(high)
+        #expect(model.targetIndex == high)
+
+        // a minimum blocks objects near the horizon
+        model.minAltitude = 40
+        model.selectTarget(low)
+        #expect(model.targetIndex == high)
+        #expect(model.limitNote(low)?.hasPrefix("Below the 40°") == true)
+        #expect(model.telescope.minAltitude == 40 && model.telescope.maxAltitude == nil)
     }
 }

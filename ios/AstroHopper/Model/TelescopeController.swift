@@ -44,8 +44,14 @@ final class TelescopeController {
     var connectionMode: ConnectionMode { didSet { defaults.set(connectionMode.rawValue, forKey: "scope_connection") } }
     var networkHost: String { didSet { defaults.set(networkHost, forKey: "scope_host") } }
     var trackAfterGoto: Bool { didSet { defaults.set(trackAfterGoto, forKey: "scope_track") } }
-    /// Goto refuses targets lower than this, in degrees.
-    var minAltitude: Double { didSet { defaults.set(minAltitude, forKey: "scope_min_alt") } }
+    /// Goto refuses targets lower than this, in degrees. Set by the app
+    /// from its altitude limits (the horizon when there is no minimum).
+    var minAltitude: Double = 0
+    /// The telescope never points higher than this, in degrees; nil is no
+    /// limit. Set by the app from its altitude limits.
+    var maxAltitude: Double?
+
+    var altitudeLimit: Double? { maxAltitude }
     /// Manual slew speed, 1 (slowest) to 9.
     var slewRate: Int { didSet { defaults.set(slewRate, forKey: "scope_slew_rate") } }
 
@@ -83,7 +89,17 @@ final class TelescopeController {
     /// While tracking, the user's manual correction relative to the target.
     @ObservationIgnored private var trackOffset = (axis1: 0.0, axis2: 0.0)
     @ObservationIgnored private var trackTarget: (@MainActor (Date) -> Vec3)?
+    @ObservationIgnored private var limitGuard: Task<Void, Never>?
+    /// The telescope's altitude before the mount is aligned; the app supplies
+    /// the phone's, since the phone rides on the tube.
+    @ObservationIgnored var fallbackAltitude: (@MainActor () -> Double?)?
 
+    /// The telescope's altitude in degrees: from the mount once it is
+    /// aligned, otherwise from the phone.
+    var currentAltitude: Double? {
+        if let p = pointingENU { return altitude(p) }
+        return fallbackAltitude?()
+    }
     init() {
         let d = UserDefaults.standard
         enabled = d.bool(forKey: "scope_enabled")
@@ -91,7 +107,6 @@ final class TelescopeController {
         connectionMode = ConnectionMode(rawValue: d.string(forKey: "scope_connection") ?? "") ?? .direct
         networkHost = d.string(forKey: "scope_host") ?? ""
         trackAfterGoto = d.object(forKey: "scope_track") as? Bool ?? true
-        minAltitude = d.object(forKey: "scope_min_alt") as? Double ?? 10
         slewRate = d.object(forKey: "scope_slew_rate") as? Int ?? 5
     }
 
@@ -243,6 +258,10 @@ final class TelescopeController {
             lastError = TelescopeError.belowHorizon.localizedDescription
             return
         }
+        if let limit = altitudeLimit, altitude(target(Date())) > limit {
+            lastError = TelescopeError.aboveLimit.localizedDescription
+            return
+        }
         motionTask?.cancel()
         lastError = nil
         targetName = name
@@ -256,6 +275,13 @@ final class TelescopeController {
                     let enu = target(Date())
                     guard altitude(enu) >= minAltitude else { throw TelescopeError.belowHorizon }
                     let a = model.axes(for: enu)
+                    if let limit = altitudeLimit {
+                        guard altitude(enu) <= limit else { throw TelescopeError.aboveLimit }
+                        let start = try await readAxes()
+                        if Self.pathExceeds(limit, model: model, from: start, to: a) {
+                            throw TelescopeError.pathAboveLimit
+                        }
+                    }
                     try await goto(a.axis1, a.axis2, fast: fast)
                     try await waitForSlew()
                 }
@@ -281,6 +307,11 @@ final class TelescopeController {
         while Date() < deadline {
             try await Task.sleep(for: .milliseconds(400))
             _ = try? await readAxes()
+            // backstop in case the mount's path differs from the predicted one
+            if let limit = altitudeLimit, let alt = currentAltitude, alt > limit + 0.3 {
+                await halt()
+                throw TelescopeError.aboveLimit
+            }
             if try await slewDone() { return }
         }
         throw TelescopeError.timeout
@@ -299,6 +330,12 @@ final class TelescopeController {
                 await halt()
                 activity = .idle
                 lastError = "Tracking stopped: \(targetName ?? "the target") went below the altitude limit."
+                return
+            }
+            if let limit = altitudeLimit, altitude(enu) > limit {
+                await halt()
+                activity = .idle
+                lastError = "Tracking stopped: \(targetName ?? "the target") rose above the \(Int(limit))° maximum altitude."
                 return
             }
             let here = model.axes(for: enu)
@@ -323,6 +360,28 @@ final class TelescopeController {
     }
 
     private func altitude(_ enu: Vec3) -> Double { asin(max(-1, min(1, enu.z))) * rad2deg }
+
+    /// Whether a goto from one set of axis angles to another would pass
+    /// above `limit`. Each motor runs straight to its new encoder count, so
+    /// the path is a straight line in encoder steps.
+    nonisolated static func pathExceeds(_ limit: Double, model: MountModel, from start: (axis1: Double, axis2: Double),
+                                        to end: (axis1: Double, axis2: Double)) -> Bool {
+        func unsigned(_ d: Double) -> Double { d < 0 ? d + 360 : d }
+        let s1 = unsigned(start.axis1), e1 = unsigned(end.axis1)
+        let s2 = unsigned(start.axis2), e2 = unsigned(end.axis2)
+        for i in 0...40 {
+            let t = Double(i) / 40
+            let d = model.direction(s1 + (e1 - s1) * t, s2 + (e2 - s2) * t)
+            if asin(max(-1, min(1, d.z))) * rad2deg > limit + 0.01 { return true }
+        }
+        return false
+    }
+
+    /// Approximate speed of the mount's manual slew rates, degrees per second.
+    nonisolated static func slewSpeed(rate: Int) -> Double {
+        let speeds = [0.0, 0.0021, 0.0042, 0.0083, 0.033, 0.067, 0.5, 1, 2, 4]
+        return speeds[max(0, min(9, rate))]
+    }
 
     /// Turns tracking on or off, now and for later gotos. Turning it on
     /// after a goto tracks that object; turning it off leaves the telescope
@@ -392,9 +451,38 @@ final class TelescopeController {
             try? await setRate(2, 0)
             try? await move(axis, Int(sign) * rate)
         }
+        guardLimit(axis: axis, rate: rate)
+    }
+
+    /// While the slew pad moves the mount, stops it before it rises past the
+    /// maximum altitude. Moving back down is always allowed.
+    private func guardLimit(axis: Int, rate: Int) {
+        limitGuard?.cancel()
+        guard let limit = altitudeLimit else { return }
+        // the motor needs a moment to stop, and positions arrive every ~0.15 s
+        let margin = max(0.1, Self.slewSpeed(rate: rate) * 0.5)
+        limitGuard = Task { [weak self] in
+            var last = self?.currentAltitude
+            while !Task.isCancelled {
+                guard let self, activity == .moving else { return }
+                try? await Task.sleep(for: .milliseconds(150))
+                _ = try? await readAxes()
+                guard let alt = currentAltitude else { continue }
+                if let l = last, alt > l + 1e-4, alt >= limit - margin {
+                    motionTask?.cancel()
+                    try? await move(axis, 0)
+                    activity = .idle
+                    resumeTracking = false
+                    lastError = "Stopped at the \(Int(limit))° maximum altitude."
+                    return
+                }
+                last = alt
+            }
+        }
     }
 
     func stopMove() {
+        limitGuard?.cancel()
         guard activity == .moving else { return }
         let resume = resumeTracking
         let previous = motionTask
