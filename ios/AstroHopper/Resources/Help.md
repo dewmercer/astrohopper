@@ -12,10 +12,22 @@ Before you attach the phone, calibrate the compass by moving it in a figure-8 pa
 
 1. Point the telescope at an easily identifiable star or planet near the object you want to observe.
 2. Tap **Align** in the toolbar.
-3. Tap the star or planet you pointed at. A 3 second countdown starts so the telescope can stop shaking. Then the app is aligned on that object: the status at the top says "Aligned", and a cross in the center of the screen shows where the telescope points. Tap **Cancel** to keep the previous alignment instead.
+3. Tap the star or planet you pointed at, then let go of the telescope. The app waits until the gyroscope shows the telescope has stopped shaking, and the ring at the top fills while it stays still. If it moves, the status says "Waiting for the telescope to settle" and the wait starts again. Then the app is aligned on that object: the status at the top says "Aligned", and a cross in the center of the screen shows where the telescope points. Tap **Cancel** to keep the previous alignment instead.
 4. Tap the object you want to observe, or tap **Search** and find it by name. A line on the map shows which way to move the telescope, and the card at the bottom shows how far: up or down, and left or right.
 5. Move the telescope until the numbers on the card are close to zero. The telescope now points at the requested object.
 6. To move to the next object, repeat the alignment from step 1, because the phone's gyroscope loses accuracy over time and over multiple movements.
+
+### Two- and Three-Star Alignment
+
+A single star corrects the map near that star, but if the phone isn't exactly parallel to the tube, the error grows as you move away from it. In Settings › Alignment, choose 2 or 3 alignment stars to correct for this.
+
+After the first star, the card at the bottom suggests the next one: a bright star well away from the first, comfortably above the horizon. Follow the arrows to it, tap it, and let the telescope settle as before. Tap **Other Star** for a different suggestion; any bright star far from the first works. With three stars, the app also corrects a small tilt.
+
+When alignment is complete, the status shows how well the stars agree, for example "Aligned on 2 stars ±0.3°". A large value means one of the stars wasn't centered, so align again. Tap **Done** at any point to stop with the stars aligned so far.
+
+### Finder and Eyepiece Circles
+
+In Settings › Field of View Circles, turn on a circle for your finder (its field of view in degrees) or your eyepiece (from the telescope and eyepiece focal lengths and the eyepiece's apparent field). The circles are drawn around the center of the map. When the target enters one, the phone taps — lightly for the finder, firmly for the eyepiece — and the card shows "In Finder" or "In Eyepiece".
 
 Tutorial videos:
 
@@ -63,7 +75,8 @@ When an object is selected, a card shows its name, type, magnitude, size and oth
 - **Faintest Magnitude**: the faintest stars and deep-sky objects to show. Only stars shown on the map can be used for alignment.
 - **Show on Map**: object types to show.
 - **Lists**: edit watch lists and your own objects.
-- **Alignment**: allow aligning on deep-sky objects. Use this with care, since it is hard to pinpoint the center of a large object such as an open cluster. You can also reset the alignment and target here.
+- **Alignment**: the number of alignment stars, and whether to allow aligning on deep-sky objects (use that with care, since it is hard to pinpoint the center of a large object such as an open cluster). You can also reset the alignment and target here.
+- **Field of View Circles**: finder and eyepiece circles.
 - **Wikipedia Button**: never, in day mode only, or always.
 - **Help**: this guide and the quick start.
 - **Location and Sensors**: your coordinates and raw sensor readings.

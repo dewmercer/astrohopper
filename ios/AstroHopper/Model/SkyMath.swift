@@ -119,12 +119,18 @@ struct CameraRays {
     /// Port of `getCameraRays()`: the screen looks along the phone's top edge, and
     /// `left` is kept horizontal so the map always has the zenith up.
     init(deviceToENU m: Mat3, alignMatrix: Mat3?) {
-        var fwd = m * Vec3(0, 1, 0)
+        self.init(deviceToENU: m, alignment: alignMatrix.map { PointingModel(world: $0) })
+    }
+
+    /// With an alignment, the view follows the fitted tube axis instead of
+    /// the phone's top edge, and the result is rotated by the world correction.
+    init(deviceToENU m: Mat3, alignment: PointingModel?) {
+        var fwd = m * (alignment?.tubeAxis ?? Vec3(0, 1, 0))
         let hlen = (fwd.x * fwd.x + fwd.y * fwd.y).squareRoot()
         let fwdHor = hlen > 1e-12 ? Vec3(fwd.x / hlen, fwd.y / hlen, 0) : Vec3(0, 1, 0)
         var left = Vec3(-fwdHor.y, fwdHor.x, 0)
         var top = cross(fwd, left)
-        if let a = alignMatrix {
+        if let a = alignment?.world {
             top = a * top
             left = a * left
             fwd = a * fwd

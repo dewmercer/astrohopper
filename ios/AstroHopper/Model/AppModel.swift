@@ -62,6 +62,27 @@ final class AppModel {
     var showTutorial: Bool { didSet { defaults.set(showTutorial ? "0" : "1", forKey: "qs_hide_v2") } }
     var wikiMode: WikiMode { didSet { defaults.set(wikiMode.rawValue, forKey: "opt_wiki_info_opt") } }
     var shown: [ObjectType: Bool] { didSet { for (t, v) in shown { save(v, "\(t.rawValue)_checked") } } }
+    /// Stars per alignment: 1 is the web app's single-star alignment.
+    var alignStarsRequired: Int { didSet { defaults.set(alignStarsRequired, forKey: "align_stars") } }
+    var finderCircle: Bool { didSet { defaults.set(finderCircle, forKey: "finder_circle") } }
+    /// Finder's true field of view, degrees.
+    var finderFOV: Double { didSet { defaults.set(finderFOV, forKey: "finder_fov") } }
+    var eyepieceCircle: Bool { didSet { defaults.set(eyepieceCircle, forKey: "eyepiece_circle") } }
+    var scopeFocalLength: Double { didSet { defaults.set(scopeFocalLength, forKey: "scope_fl") } }
+    var eyepieceFocalLength: Double { didSet { defaults.set(eyepieceFocalLength, forKey: "eyepiece_fl") } }
+    /// Eyepiece apparent field of view, degrees.
+    var eyepieceAFOV: Double { didSet { defaults.set(eyepieceAFOV, forKey: "eyepiece_afov") } }
+
+    /// Eyepiece true field of view in degrees (apparent field ÷ magnification).
+    var eyepieceFOV: Double? {
+        guard scopeFocalLength > 0, eyepieceFocalLength > 0, eyepieceAFOV > 0 else { return nil }
+        return eyepieceAFOV * eyepieceFocalLength / scopeFocalLength
+    }
+
+    /// Diameters in degrees of the circles drawn around the view center.
+    var fieldCircles: (finder: Double?, eyepiece: Double?) {
+        (finderCircle && finderFOV > 0 ? finderFOV : nil, eyepieceCircle ? eyepieceFOV : nil)
+    }
 
     // MARK: Pointing state
 
@@ -70,17 +91,32 @@ final class AppModel {
     private(set) var selectMode: SelectMode = .target
     private(set) var targetIndex: Int?
     private(set) var alignIndex: Int?
-    private(set) var countdown: Double?
+    /// While waiting for the telescope to settle: how long it has been
+    /// still, from 0 to 1, and whether it is moving right now.
+    private(set) var steadyProgress: Double?
+    private(set) var settling = false
     /// `global_use_gyro`: aligned on a star and tracking with the gyroscope.
     private(set) var aligned = false
     private(set) var useCompass = false
     private(set) var compassAvailable = false
-    private var alignMatrix = Mat3.identity
+    private var alignment = PointingModel()
+    /// Stars used in the current alignment, in order.
+    private(set) var alignSamples: [AlignmentSample] = []
+    /// RMS mismatch of a multi-star alignment, degrees.
+    private(set) var alignmentError: Double?
+    /// The star suggested for the next step of a multi-star alignment.
+    private(set) var suggestedAlignIndex: Int?
+    @ObservationIgnored private var skippedSuggestions: Set<Int> = []
+    /// Whether the target (or suggested star) is inside the finder or
+    /// eyepiece circle; with some slack before it counts as having left.
+    private(set) var guideInFinder = false
+    private(set) var guideInEyepiece = false
     private var alphaUserOffset = 0.0
     private var alphaDiff = 0.0
     @ObservationIgnored private var countdownTask: Task<Void, Never>?
     /// Alignment in effect before `align()`, restored by `cancelAlign()`.
-    @ObservationIgnored private var previousAlignment: (aligned: Bool, matrix: Mat3, alphaDiff: Double, offset: Double, index: Int?)?
+    @ObservationIgnored private var previousAlignment: (aligned: Bool, model: PointingModel, samples: [AlignmentSample],
+                                                        error: Double?, alphaDiff: Double, offset: Double, index: Int?)?
     @ObservationIgnored private var planetsComputedAt: (date: Date, lat: Double, lon: Double)?
 
     // MARK: Watch lists and user objects
@@ -108,6 +144,13 @@ final class AppModel {
         pinchZoom = flag("pinch_zoom", true)
         showTutorial = d.string(forKey: "qs_hide_v2") != "1"
         wikiMode = WikiMode(rawValue: d.string(forKey: "opt_wiki_info_opt") ?? "") ?? .dayOnly
+        alignStarsRequired = min(3, max(1, d.object(forKey: "align_stars") as? Int ?? 1))
+        finderCircle = d.object(forKey: "finder_circle") as? Bool ?? false
+        finderFOV = d.object(forKey: "finder_fov") as? Double ?? 6
+        eyepieceCircle = d.object(forKey: "eyepiece_circle") as? Bool ?? false
+        scopeFocalLength = d.object(forKey: "scope_fl") as? Double ?? 1200
+        eyepieceFocalLength = d.object(forKey: "eyepiece_fl") as? Double ?? 25
+        eyepieceAFOV = d.object(forKey: "eyepiece_afov") as? Double ?? 52
         var shown: [ObjectType: Bool] = [:]
         for t in ObjectType.allCases where t != .star {
             shown[t] = flag("\(t.rawValue)_checked", true)
@@ -187,8 +230,12 @@ final class AppModel {
     }
 
     func cameraRays() -> CameraRays {
-        CameraRays(deviceToENU: Mat3.rotZ(degrees: currentAlpha) * motion.tilt,
-                   alignMatrix: aligned ? alignMatrix : nil)
+        CameraRays(deviceToENU: measuredAttitude, alignment: aligned ? alignment : nil)
+    }
+
+    /// Device-to-ENU attitude from the sensors, before alignment corrections.
+    private var measuredAttitude: Mat3 {
+        Mat3.rotZ(degrees: currentAlpha) * motion.tilt
     }
 
     func equatorialToENU(_ date: Date) -> Mat3 {
@@ -204,7 +251,7 @@ final class AppModel {
     func pointing(at date: Date) -> (alt: Double, az: Double, up: Double?, right: Double?) {
         let cam = cameraRays()
         let (alt, az) = cam.altAz
-        guard let t = target else { return (alt, az, nil, nil) }
+        guard let t = guideObject else { return (alt, az, nil, nil) }
         let ray = equatorialToENU(date) * t.eq
         let x = -dot(cam.left, ray), y = dot(cam.top, ray), z = dot(cam.fwd, ray)
         return (alt, az, atan2(y, z) * rad2deg, atan2(x, z) * rad2deg)
@@ -233,10 +280,59 @@ final class AppModel {
             // realign in manual mode: keep bearing
             alphaUserOffset = motion.gyroAlpha + alphaDiff - baseAlpha
         }
-        previousAlignment = (aligned, alignMatrix, alphaDiff, alphaUserOffset, alignIndex)
+        previousAlignment = (aligned, alignment, alignSamples, alignmentError, alphaDiff, alphaUserOffset, alignIndex)
         setAligned(false)
         alignIndex = nil
+        alignSamples = []
+        alignmentError = nil
+        skippedSuggestions = []
+        suggestedAlignIndex = nil
         selectMode = .align
+    }
+
+    /// Between the stars of a multi-star alignment: already aligned on at
+    /// least one star and waiting for the next.
+    var isAligningNextStar: Bool { selectMode != .target && !alignSamples.isEmpty }
+
+    /// Ends a multi-star alignment with the stars aligned so far.
+    func finishAlign() {
+        countdownTask?.cancel()
+        steadyProgress = nil
+        settling = false
+        selectMode = .target
+        suggestedAlignIndex = nil
+        skippedSuggestions = []
+        if let last = alignSamples.last { alignIndex = last.index }
+    }
+
+    /// Suggests a different star for the next alignment step.
+    func suggestAnotherStar() {
+        if let s = suggestedAlignIndex { skippedSuggestions.insert(s) }
+        suggestNextStar()
+        if suggestedAlignIndex == nil, !skippedSuggestions.isEmpty {
+            skippedSuggestions = []
+            suggestNextStar()
+        }
+    }
+
+    private func suggestNextStar(date: Date = Date()) {
+        let toENU = equatorialToENU(date)
+        let used = Set(alignSamples.map(\.index))
+        var candidates: [(index: Int, enu: Vec3, mag: Double)] = []
+        let maxMag = min(Double(starMag), 2.5)
+        for i in 0..<catalog.count where !used.contains(i) && !skippedSuggestions.contains(i) {
+            let o = catalog[i]
+            guard o.name != nil, o.name != "Moon", shown[o.type] == true else { continue }
+            guard (o.type == .star && o.mag <= maxMag) || o.type == .planet else { continue }
+            candidates.append((i, toENU * o.eq, o.mag))
+        }
+        suggestedAlignIndex = Alignment.suggest(candidates: candidates, used: alignSamples.map(\.star))
+    }
+
+    /// The suggested alignment star while aligning, otherwise the target.
+    var guideObject: SkyObject? {
+        if isAligningNextStar, let s = suggestedAlignIndex { return catalog[s] }
+        return target
     }
 
     /// Leaves alignment mode (or stops the countdown) and restores the
@@ -244,10 +340,24 @@ final class AppModel {
     func cancelAlign() {
         guard selectMode != .target else { return }
         countdownTask?.cancel()
-        countdown = nil
+        steadyProgress = nil
+        settling = false
+        if !alignSamples.isEmpty {
+            // multi-star: cancelling a countdown waits for another star;
+            // otherwise keep the stars aligned so far
+            if selectMode == .countdown {
+                selectMode = .align
+                alignIndex = alignSamples.last?.index
+            } else {
+                finishAlign()
+            }
+            return
+        }
         selectMode = .target
         if let p = previousAlignment {
-            alignMatrix = p.matrix
+            alignment = p.model
+            alignSamples = p.samples
+            alignmentError = p.error
             alphaDiff = p.alphaDiff
             alphaUserOffset = p.offset
             alignIndex = p.index
@@ -261,7 +371,11 @@ final class AppModel {
     /// Port of `resetAll()`.
     func resetAll() {
         countdownTask?.cancel()
-        countdown = nil
+        steadyProgress = nil
+        settling = false
+        alignSamples = []
+        alignmentError = nil
+        suggestedAlignIndex = nil
         selectMode = .target
         targetIndex = nil
         alignIndex = nil
@@ -287,43 +401,83 @@ final class AppModel {
         }
     }
 
-    /// Port of `selectAlignWithTimer()`: wait 3 s so the telescope stops shaking.
+    /// Replaces `selectAlignWithTimer()`: instead of a fixed 3 s wait, wait
+    /// until the gyroscope shows the telescope has stopped shaking.
     private func startAlignCountdown(_ index: Int) {
         alignIndex = index
         selectMode = .countdown
+        steadyProgress = 0
+        settling = false
         countdownTask?.cancel()
         countdownTask = Task { [weak self] in
-            var remaining = 3.0
-            while remaining > 0.05 {
-                self?.countdown = remaining
-                try? await Task.sleep(for: .milliseconds(100))
+            var timer = SteadinessTimer()
+            let clock = ContinuousClock()
+            var last = clock.now
+            while !timer.isComplete {
+                try? await Task.sleep(for: .milliseconds(50))
                 if Task.isCancelled { return }
-                remaining -= 0.1
+                guard let self else { return }
+                let now = clock.now
+                timer.update(angularSpeed: motion.angularSpeed, dt: (now - last) / .seconds(1))
+                last = now
+                steadyProgress = timer.progress
+                settling = timer.isMoving
             }
-            self?.countdown = nil
+            self?.steadyProgress = nil
+            self?.settling = false
             self?.selectAlign(index)
         }
     }
 
-    /// Port of `selectAlign()`: rotate the view so the aligned star is centered.
+    /// Port of `selectAlign()`, extended to several stars. The first star
+    /// centers the view exactly, like the web app; each further star refits
+    /// the pointing model to all of them.
     func selectAlign(_ index: Int, date: Date = Date()) {
-        let cam = cameraRays()
-        let tr = equatorialToENU(date) * catalog[index].eq
-        let fw = cam.fwd
-        let trH = normalize(Vec3(tr.x, tr.y, 0))
-        let fwH = normalize(Vec3(fw.x, fw.y, 0))
-        let dAZ = atan2(cross(trH, fwH).z, dot(trH, fwH))
-        let dAlt = asin(max(-1, min(1, tr.z))) - asin(max(-1, min(1, fw.z)))
-        // rotate around the vertical axis, then around the camera's left axis
-        let dazMat = Mat3(r0: Vec3(cos(dAZ), sin(dAZ), 0), r1: Vec3(-sin(dAZ), cos(dAZ), 0), r2: Vec3(0, 0, 1))
-        let daltMat = Mat3.rotation(axis: cam.left, angle: -dAlt)
-        alignMatrix = dazMat * daltMat
-
-        alphaDiff = (baseAlpha + alphaUserOffset) - motion.gyroAlpha
+        let star = equatorialToENU(date) * catalog[index].eq
+        let attitude = measuredAttitude
+        if alignSamples.isEmpty || !aligned {
+            let cam = CameraRays(deviceToENU: attitude, alignment: nil)
+            alignment = PointingModel(world: Alignment.oneStar(camera: cam, star: star))
+            alphaDiff = (baseAlpha + alphaUserOffset) - motion.gyroAlpha
+            alignSamples = [AlignmentSample(index: index, deviceToENU: attitude, star: star)]
+            alignmentError = nil
+        } else {
+            // the gyroscope frame from the first star is kept, so all samples agree
+            alignSamples.append(AlignmentSample(index: index, deviceToENU: attitude, star: star))
+            alignment = Alignment.fit(alignSamples)
+            alignmentError = Alignment.rmsError(alignment, alignSamples)
+        }
         setAligned(true)
         alignIndex = index
-        selectMode = .target
         previousAlignment = nil
+        if alignSamples.count < alignStarsRequired {
+            selectMode = .align
+            skippedSuggestions = []
+            suggestNextStar(date: date)
+        } else {
+            finishAlign()
+        }
+    }
+
+    /// Called several times a second: tracks whether the target (or the
+    /// suggested alignment star) has entered the finder or eyepiece circle.
+    func updateProximity(date: Date = Date()) {
+        guard aligned, let g = guideObject else {
+            guideInFinder = false
+            guideInEyepiece = false
+            return
+        }
+        let ray = equatorialToENU(date) * g.eq
+        let distance = acos(max(-1, min(1, dot(cameraRays().fwd, ray)))) * rad2deg
+        func inside(_ diameter: Double?, _ was: Bool) -> Bool {
+            guard let diameter else { return false }
+            return distance < diameter / 2 * (was ? 1.15 : 1)
+        }
+        let circles = fieldCircles
+        let finder = inside(circles.finder, guideInFinder)
+        let eyepiece = inside(circles.eyepiece, guideInEyepiece)
+        if finder != guideInFinder { guideInFinder = finder }
+        if eyepiece != guideInEyepiece { guideInEyepiece = eyepiece }
     }
 
     /// Horizontal drag in manual mode moves the map (`moveSky()`); in demo mode

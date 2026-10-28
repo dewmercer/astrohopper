@@ -96,6 +96,16 @@ struct SettingsView: View {
                 .themedRow(theme)
 
                 Section {
+                    Picker("Alignment Stars", selection: $model.alignStarsRequired) {
+                        Text("1").tag(1)
+                        Text("2").tag(2)
+                        Text("3").tag(3)
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowSeparator(.hidden)
+                    LabeledContent("Alignment Stars") {
+                        Text(alignmentDescription).foregroundStyle(theme.secondary)
+                    }
                     Toggle("Align on Deep-Sky Objects", isOn: $model.alignOnDSO)
                     Button("Reset Alignment and Target", role: .destructive) { confirmReset = true }
                         .confirmationDialog("Reset alignment and clear the target?", isPresented: $confirmReset,
@@ -105,7 +115,41 @@ struct SettingsView: View {
                 } header: {
                     Text("Alignment")
                 } footer: {
-                    Text("Aligning on a large object such as an open cluster is less precise, because its center is hard to pinpoint.")
+                    Text("""
+                    With 2 or 3 stars, AstroHopper also corrects for a phone that isn't exactly parallel \
+                    to the tube, so it stays accurate across the sky. After each star it suggests the next one; \
+                    tap Done to stop early. Aligning on a large object such as an open cluster is less precise, \
+                    because its center is hard to pinpoint.
+                    """)
+                }
+                .themedRow(theme)
+
+                Section {
+                    Toggle("Finder Circle", isOn: $model.finderCircle)
+                    if model.finderCircle {
+                        ValueStepper(title: "Finder Field", value: Self.degrees(model.finderFOV),
+                                     decrement: { model.finderFOV = max(0.5, model.finderFOV - 0.5) },
+                                     increment: { model.finderFOV = min(15, model.finderFOV + 0.5) })
+                    }
+                    Toggle("Eyepiece Circle", isOn: $model.eyepieceCircle)
+                    if model.eyepieceCircle {
+                        numberField("Telescope Focal Length", value: $model.scopeFocalLength, unit: "mm")
+                        numberField("Eyepiece Focal Length", value: $model.eyepieceFocalLength, unit: "mm")
+                        numberField("Eyepiece Apparent Field", value: $model.eyepieceAFOV, unit: "°")
+                        LabeledContent("True Field") {
+                            Text(model.eyepieceFOV.map(Self.degrees) ?? "–").foregroundStyle(theme.secondary)
+                        }
+                        if let fov = model.eyepieceFOV, fov > 0 {
+                            LabeledContent("Magnification") {
+                                Text("\(Int((model.scopeFocalLength / model.eyepieceFocalLength).rounded()))×")
+                                    .foregroundStyle(theme.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Field of View Circles")
+                } footer: {
+                    Text("Circles around the center of the map show what your finder and eyepiece see. The phone taps when the target enters each one. A typical 8×50 finder sees about 5°.")
                 }
                 .themedRow(theme)
 
@@ -164,6 +208,30 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
                 .themedBackground(theme)
+            }
+        }
+    }
+
+    private var alignmentDescription: String {
+        switch model.alignStarsRequired {
+        case 1: "Quick"
+        case 2: "Accurate"
+        default: "Most Accurate"
+        }
+    }
+
+    private static func degrees(_ v: Double) -> String {
+        v.formatted(.number.precision(.fractionLength(v < 1 ? 2 : 1))) + "°"
+    }
+
+    private func numberField(_ title: String, value: Binding<Double>, unit: String) -> some View {
+        LabeledContent(title) {
+            HStack(spacing: 4) {
+                TextField(title, value: value, format: .number)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: 90)
+                Text(unit).foregroundStyle(theme.secondary)
             }
         }
     }

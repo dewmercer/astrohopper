@@ -277,6 +277,7 @@ struct SearchTests {
 struct CancelAlignTests {
     @Test func cancelRestoresPreviousAlignment() throws {
         let model = AppModel()
+        model.alignStarsRequired = 1
         let sirius = try #require(model.catalog.find("Sirius"))
         model.align()
         model.selectAlign(sirius)
@@ -292,8 +293,195 @@ struct CancelAlignTests {
 
     @Test func cancelWithoutPriorAlignmentStaysUnaligned() {
         let model = AppModel()
+        model.alignStarsRequired = 1
         model.align()
         model.cancelAlign()
         #expect(!model.aligned && model.selectMode == .target && model.alignIndex == nil)
+    }
+}
+
+struct SteadinessTests {
+    @Test func completesAfterStayingStill() {
+        var t = SteadinessTimer()
+        for _ in 0..<29 { t.update(angularSpeed: 0.1, dt: 0.05) }
+        #expect(!t.isComplete && !t.isMoving)
+        t.update(angularSpeed: 0.1, dt: 0.05)
+        #expect(t.isComplete && t.progress == 1)
+    }
+
+    @Test func movementRestartsTheWait() {
+        var t = SteadinessTimer()
+        for _ in 0..<20 { t.update(angularSpeed: 0.1, dt: 0.05) }
+        #expect(t.progress > 0.6)
+        t.update(angularSpeed: 3, dt: 0.05)
+        #expect(t.isMoving && t.progress == 0)
+        for _ in 0..<29 { t.update(angularSpeed: 0.2, dt: 0.05) }
+        #expect(!t.isComplete)
+        t.update(angularSpeed: 0.2, dt: 0.05)
+        #expect(t.isComplete)
+    }
+
+    @Test func neverCompletesWhileShaking() {
+        var t = SteadinessTimer()
+        for _ in 0..<200 { t.update(angularSpeed: 2, dt: 0.05) }
+        #expect(!t.isComplete && t.isMoving)
+    }
+}
+
+struct MultiStarFitTests {
+    /// Phone attitude with its top edge at roughly azimuth `az`, altitude `alt`.
+    func attitude(_ az: Double, _ alt: Double) -> Mat3 {
+        Mat3.rotZ(degrees: -az) * Mat3.tilt(beta: alt, gamma: 0)
+    }
+
+    func angle(_ a: Vec3, _ b: Vec3) -> Double {
+        acos(max(-1, min(1, dot(normalize(a), normalize(b))))) * rad2deg
+    }
+
+    /// The phone is mounted 2° off the tube axis and the compass is 3° off.
+    let truth2 = PointingModel(world: Mat3.rotZ(degrees: 3), tubeAxis: normalize(Vec3(0.035, 1, -0.02)))
+
+    func samples(_ truth: PointingModel, _ points: [(Double, Double)]) -> [AlignmentSample] {
+        points.enumerated().map { i, p in
+            let d = attitude(p.0, p.1)
+            return AlignmentSample(index: i, deviceToENU: d, star: normalize(truth.direction(deviceToENU: d)))
+        }
+    }
+
+    @Test func twoStarsRecoverMountingOffset() {
+        let s = samples(truth2, [(20, 30), (110, 60)])
+        let fit = Alignment.fit(s)
+        #expect(Alignment.rmsError(fit, s) < 0.01)
+        for (az, alt) in [(250.0, 45.0), (330, 20), (180, 70)] {
+            let d = attitude(az, alt)
+            #expect(angle(fit.direction(deviceToENU: d), truth2.direction(deviceToENU: d)) < 0.1)
+        }
+    }
+
+    @Test func twoStarsBeatOneStarAwayFromTheAlignmentStar() {
+        let s = samples(truth2, [(20, 30), (110, 60)])
+        let fit = Alignment.fit(s)
+        let cam = CameraRays(deviceToENU: s[0].deviceToENU, alignment: nil)
+        let one = PointingModel(world: Alignment.oneStar(camera: cam, star: s[0].star))
+        let d = attitude(200, 65)
+        let truth = truth2.direction(deviceToENU: d)
+        let oneStarError = angle(one.direction(deviceToENU: d), truth)
+        let twoStarError = angle(fit.direction(deviceToENU: d), truth)
+        #expect(oneStarError > 1)
+        #expect(twoStarError < 0.1)
+    }
+
+    @Test func threeStarsRecoverTilt() {
+        let tilt = Mat3.rotation(axis: Vec3(1, 0, 0), angle: 0.6 * deg2rad) * Mat3.rotation(axis: Vec3(0, 1, 0), angle: -0.4 * deg2rad)
+        let truth = PointingModel(world: Mat3.rotZ(degrees: -4) * tilt, tubeAxis: normalize(Vec3(-0.02, 1, 0.03)))
+        let s = samples(truth, [(10, 25), (120, 55), (240, 40)])
+        let fit = Alignment.fit(s)
+        #expect(Alignment.rmsError(fit, s) < 0.02)
+        for (az, alt) in [(300.0, 35.0), (60, 70), (180, 20)] {
+            let d = attitude(az, alt)
+            #expect(angle(fit.direction(deviceToENU: d), truth.direction(deviceToENU: d)) < 0.1)
+        }
+    }
+
+    @Test func badlySpreadStarsStayReasonable() {
+        // two stars almost on top of each other can't pin the model down
+        let s = samples(truth2, [(20, 30), (22, 31)])
+        let fit = Alignment.fit(s)
+        #expect(Alignment.rmsError(fit, s) < 0.05)
+        #expect(angle(fit.tubeAxis, Vec3(0, 1, 0)) < 10)
+    }
+
+    @Test func suggestsAStarAboutNinetyDegreesAway() {
+        func dir(_ az: Double, _ alt: Double) -> Vec3 {
+            let a = az * deg2rad, h = alt * deg2rad
+            return Vec3(cos(h) * sin(a), cos(h) * cos(a), sin(h))
+        }
+        let used = [dir(0, 40)]
+        let candidates: [(index: Int, enu: Vec3, mag: Double)] = [
+            (1, dir(30, 40), 0.0),   // too close
+            (2, dir(120, 30), 1.0),  // about 90° away
+            (3, dir(180, -10), 0.0), // below the horizon
+            (4, dir(0, 85), 0.0),    // near the zenith
+            (5, dir(170, 30), 2.5),  // well away but faint
+        ]
+        #expect(Alignment.suggest(candidates: candidates, used: used) == 2)
+        #expect(Alignment.suggest(candidates: [candidates[0], candidates[2]], used: used) == nil)
+    }
+
+    @Test func thirdStarAvoidsTheFirstTwosGreatCircle() {
+        func dir(_ az: Double, _ alt: Double) -> Vec3 {
+            let a = az * deg2rad, h = alt * deg2rad
+            return Vec3(cos(h) * sin(a), cos(h) * cos(a), sin(h))
+        }
+        let used = [dir(0, 20), dir(90, 20)]
+        let candidates: [(index: Int, enu: Vec3, mag: Double)] = [
+            (1, dir(200, 20), 1.0), // near the same great circle
+            (2, dir(225, 60), 1.0), // well off it
+        ]
+        #expect(Alignment.suggest(candidates: candidates, used: used) == 2)
+    }
+}
+
+@MainActor
+struct MultiStarFlowTests {
+    @Test func twoStarAlignmentAsksForASecondStar() throws {
+        let model = AppModel()
+        model.alignStarsRequired = 2
+        defer { model.alignStarsRequired = 1 }
+        let sirius = try #require(model.catalog.find("Sirius"))
+        let vega = try #require(model.catalog.find("Vega"))
+
+        model.align()
+        model.selectAlign(sirius)
+        #expect(model.aligned && model.isAligningNextStar && model.selectMode == .align)
+        #expect(model.suggestedAlignIndex != sirius)
+
+        model.selectAlign(vega)
+        #expect(model.aligned && !model.isAligningNextStar && model.selectMode == .target)
+        #expect(model.alignSamples.map(\.index) == [sirius, vega])
+        #expect(model.alignmentError != nil)
+    }
+
+    @Test func doneAfterOneStarKeepsThatAlignment() throws {
+        let model = AppModel()
+        model.alignStarsRequired = 3
+        defer { model.alignStarsRequired = 1 }
+        let sirius = try #require(model.catalog.find("Sirius"))
+        model.align()
+        model.selectAlign(sirius)
+        let fwd = model.cameraRays().fwd
+        model.finishAlign()
+        #expect(model.aligned && model.selectMode == .target && model.alignIndex == sirius)
+        #expect(length(model.cameraRays().fwd - fwd) < 1e-9)
+        #expect(model.suggestedAlignIndex == nil)
+    }
+
+    @Test func cancellingNextStarCountdownKeepsWaiting() throws {
+        let model = AppModel()
+        model.alignStarsRequired = 2
+        defer { model.alignStarsRequired = 1 }
+        let sirius = try #require(model.catalog.find("Sirius"))
+        model.align()
+        model.selectAlign(sirius)
+        model.cancelAlign()  // in align mode between stars: finishes
+        #expect(model.selectMode == .target && model.aligned)
+    }
+}
+
+@MainActor
+struct FieldCircleTests {
+    @Test func eyepieceTrueField() {
+        let model = AppModel()
+        let saved = (model.scopeFocalLength, model.eyepieceFocalLength, model.eyepieceAFOV, model.eyepieceCircle)
+        defer {
+            (model.scopeFocalLength, model.eyepieceFocalLength, model.eyepieceAFOV, model.eyepieceCircle) = saved
+        }
+        model.scopeFocalLength = 1200
+        model.eyepieceFocalLength = 25
+        model.eyepieceAFOV = 52
+        model.eyepieceCircle = true
+        #expect(abs((model.eyepieceFOV ?? 0) - 52.0 / 48) < 1e-9)
+        model.eyepieceCircle = false
+        #expect(model.fieldCircles.eyepiece == nil)
     }
 }

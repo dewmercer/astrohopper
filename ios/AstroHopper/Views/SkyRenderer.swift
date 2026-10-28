@@ -37,6 +37,7 @@ struct SkyRenderer {
         let catalog = model.catalog
         let waitingForAlign = model.waitingForAlign
         let targetIndex = model.targetIndex, alignIndex = model.alignIndex
+        let suggestion = model.isAligningNextStar ? model.suggestedAlignIndex : nil
         let starMag = Double(model.starMag), dsoMag = Double(model.dsoMag)
         let shown = model.shown
         var targets: [(x: Double, y: Double, index: Int)] = []
@@ -49,7 +50,7 @@ struct SkyRenderer {
                 i = max(i + 1, catalog.typeEnd[t] ?? catalog.count)
                 continue
             }
-            let highlight = (i == targetIndex || i == alignIndex) ? 0 : 1
+            let highlight = (i == targetIndex || i == alignIndex || i == suggestion) ? 0 : 1
             if let pos = plot(obj, toCamera: toCamera, proj: proj, highlight: highlight, ctx: &ctx),
                t != .constellation, !waitingForAlign || model.validAlignType(t) {
                 targets.append((pos.x, pos.y, i))
@@ -61,15 +62,25 @@ struct SkyRenderer {
         }
         if let ti = targetIndex {
             let star = catalog[ti]
-            plotBearing(toCamera * star.eq, proj: proj, ctx: &ctx)
+            if suggestion == nil { plotBearing(toCamera * star.eq, proj: proj, ctx: &ctx) }
             // a target fainter than the limit (found by search) is still selectable
             if let pos = plot(star, toCamera: toCamera, proj: proj, highlight: 3, ctx: &ctx),
                model.validAlignType(star.type), !targets.contains(where: { $0.index == ti }) {
                 targets.append((pos.x, pos.y, ti))
             }
-        } else if model.aligned {
+        }
+        if let si = suggestion {
+            let star = catalog[si]
+            plotBearing(toCamera * star.eq, proj: proj, ctx: &ctx)
+            if let pos = plot(star, toCamera: toCamera, proj: proj, highlight: 2, ctx: &ctx),
+               !targets.contains(where: { $0.index == si }) {
+                targets.append((pos.x, pos.y, si))
+            }
+        }
+        if targetIndex == nil && suggestion == nil && model.aligned {
             plotCross(ctx: &ctx)
         }
+        plotFieldCircles(proj: proj, ctx: &ctx)
         plotLines(toCamera: toCamera, proj: proj, ctx: &ctx)
         model.hitTargets.items = targets
     }
@@ -179,6 +190,28 @@ struct SkyRenderer {
             path.addLine(to: CGPoint(x: p2.x * size.width, y: p2.y * size.height))
         }
         ctx.stroke(path, with: .color(style.constellations), lineWidth: 1)
+    }
+
+    /// Finder and eyepiece fields of view around the view center. The map
+    /// projection is orthographic, so a circle of angular radius r has a
+    /// screen radius proportional to sin(r).
+    private func plotFieldCircles(proj: Projection, ctx: inout GraphicsContext) {
+        let circles = model.fieldCircles
+        let cx = size.width / 2, cy = size.height / 2
+        for (diameter, label, inside) in [(circles.finder, "Finder", model.guideInFinder),
+                                          (circles.eyepiece, "Eyepiece", model.guideInEyepiece)] {
+            guard let diameter else { continue }
+            let r = sin(diameter / 2 * deg2rad) / (2 * proj.limX) * size.width
+            guard r >= 3 else { continue }
+            let path = Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r))
+            let color = inside ? style.bearing : style.cross
+            ctx.stroke(path, with: .color(color.opacity(inside ? 1 : 0.8)),
+                       style: StrokeStyle(lineWidth: inside ? 3 : 1.5, dash: label == "Finder" ? [6, 4] : []))
+            if r > 30 && r < size.width / 2 - 20 {
+                ctx.draw(Text(label).font(font(2.5)).foregroundStyle(color),
+                         at: CGPoint(x: cx + r * 0.71 + 3, y: cy - r * 0.71 - 3), anchor: .bottomLeading)
+            }
+        }
     }
 
     private func plotCross(ctx: inout GraphicsContext) {

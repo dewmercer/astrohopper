@@ -20,6 +20,7 @@
 		92ECC5F1632AFE2844EE1888 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F04A83D70DC4478E5708437 /* OnboardingView.swift */; };
 		97689D7B13BC03A22B63315F /* SkyRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88DA78816E50AF780C3C986 /* SkyRenderer.swift */; };
 		9907E421CB40F14D1C234589 /* vsop87a.json in Resources */ = {isa = PBXBuildFile; fileRef = B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */; };
+		994F7020C69F997039C17D7B /* Alignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E1670910C34A7A36292BB0 /* Alignment.swift */; };
 		A6C91CDE378CDD45FCE29839 /* catalog.json in Resources */ = {isa = PBXBuildFile; fileRef = 23F64E218F07618FB26F61CD /* catalog.json */; };
 		B65D4DD1F84154B4AE343475 /* MotionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6ADA780EDDB800524364D3A /* MotionTracker.swift */; };
 		B9A66609CA925CD19A03FD7E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D317FBF2354C143A2985C7C3 /* SettingsView.swift */; };
@@ -42,6 +43,7 @@
 /* Begin PBXFileReference section */
 		04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		23F64E218F07618FB26F61CD /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
+		24E1670910C34A7A36292BB0 /* Alignment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alignment.swift; sourceTree = "<group>"; };
 		2515A9AE9FD68157EE441176 /* Help.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Help.md; sourceTree = "<group>"; };
 		3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperApp.swift; sourceTree = "<group>"; };
 		3F04A83D70DC4478E5708437 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -83,6 +85,7 @@
 		3CE5EBDCAFF7A387697D1CEE /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				24E1670910C34A7A36292BB0 /* Alignment.swift */,
 				8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */,
 				CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */,
 				B7CCD16963AEB5745C987C5E /* LocationProvider.swift */,
@@ -285,6 +288,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				994F7020C69F997039C17D7B /* Alignment.swift in Sources */,
 				5F0591DFEF2B991E76D5BF93 /* AppModel.swift in Sources */,
 				BDF0810F82434974372F8124 /* AstroHopperApp.swift in Sources */,
 				E525DB07A5423465395B1F12 /* Catalog.swift in Sources */,

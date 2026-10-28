@@ -21,7 +21,10 @@ struct ContentView: View {
                     Spacer()
                     ZoomControl()
                 }
-                if model.target != nil || model.currentList >= 0 {
+                if model.isAligningNextStar {
+                    AlignStepCard()
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if model.target != nil || model.currentList >= 0 {
                     TargetCard(wikiURL: $wikiURL)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -30,11 +33,14 @@ struct ContentView: View {
             .padding(.horizontal, 12)
             .padding(.bottom, 4)
             .animation(.snappy, value: model.targetIndex)
+            .animation(.snappy, value: model.isAligningNextStar)
         }
         .themed(theme)
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
-        .sensoryFeedback(.success, trigger: model.aligned) { _, aligned in aligned }
+        .sensoryFeedback(.success, trigger: model.alignSamples.count) { old, new in new > old }
+        .sensoryFeedback(.impact(weight: .light), trigger: model.guideInFinder) { _, inside in inside }
+        .sensoryFeedback(.impact(weight: .heavy), trigger: model.guideInEyepiece) { _, inside in inside }
         .sensoryFeedback(.selection, trigger: model.targetIndex)
         .sheet(isPresented: $showSettings) {
             SettingsView(showOnboarding: $showOnboarding).themed(theme)
@@ -65,6 +71,12 @@ struct ContentView: View {
             while !Task.isCancelled {
                 model.tick()
                 try? await Task.sleep(for: .seconds(2))
+            }
+        }
+        .task {
+            while !Task.isCancelled {
+                model.updateProximity()
+                try? await Task.sleep(for: .milliseconds(100))
             }
         }
         .alert("Unable to Load Data", isPresented: .constant(model.loadError != nil)) {
@@ -125,7 +137,10 @@ private struct StatusCapsule: View {
         VStack(spacing: 6) {
             HStack(spacing: 10) {
                 status
-                if model.selectMode != .target {
+                if model.isAligningNextStar && model.selectMode == .align {
+                    Button("Done") { model.finishAlign() }
+                        .font(.subheadline.weight(.semibold))
+                } else if model.selectMode != .target {
                     Button("Cancel") { model.cancelAlign() }
                         .font(.subheadline.weight(.semibold))
                 }
@@ -164,19 +179,37 @@ private struct StatusCapsule: View {
                 ZStack {
                     Circle().stroke(theme.secondary.opacity(0.4), lineWidth: 3)
                     Circle()
-                        .trim(from: 0, to: (model.countdown ?? 0) / 3)
+                        .trim(from: 0, to: model.steadyProgress ?? 0)
                         .stroke(theme.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                 }
                 .frame(width: 18, height: 18)
-                Text("Hold steady on \(model.alignObject?.displayName ?? "star")…")
+                Text(model.settling ? "Waiting for the telescope to settle…"
+                                    : "Hold steady on \(model.alignObject?.displayName ?? "star")…")
             }
             .font(.subheadline.weight(.semibold))
         case .align:
-            Label("Tap the star you're pointing at", systemImage: "scope")
-                .font(.subheadline.weight(.semibold))
+            if model.isAligningNextStar {
+                Label("Aim at star \(model.alignSamples.count + 1) of \(model.alignStarsRequired), then tap it",
+                      systemImage: "scope")
+                    .font(.subheadline.weight(.semibold))
+            } else {
+                Label("Tap the star you're pointing at", systemImage: "scope")
+                    .font(.subheadline.weight(.semibold))
+            }
         case .target:
-            if model.aligned {
+            if model.aligned && model.alignSamples.count >= 2 {
+                HStack(spacing: 6) {
+                    Label("Aligned on \(model.alignSamples.count) stars", systemImage: "checkmark.circle.fill")
+                    if let e = model.alignmentError {
+                        Text("±\(e, format: .number.precision(.fractionLength(e < 1 ? 2 : 1)))°")
+                            .foregroundStyle(theme.secondary)
+                            .monospacedDigit()
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .accessibilityElement(children: .combine)
+            } else if model.aligned {
                 Label("Aligned on \(model.alignObject?.displayName ?? "star")", systemImage: "checkmark.circle.fill")
                     .font(.subheadline.weight(.semibold))
             } else {
@@ -225,9 +258,7 @@ private struct TargetCard: View {
         VStack(alignment: .leading, spacing: 12) {
             if let target = model.target {
                 header(target)
-                TimelineView(.periodic(from: .now, by: 0.1)) { tl in
-                    direction(model.pointing(at: tl.date))
-                }
+                DirectionReadout()
             } else if let item = model.currentWatchItem {
                 Label("\(item.name) is not in the catalog", systemImage: "questionmark.circle")
                     .foregroundStyle(theme.secondary)
@@ -273,27 +304,6 @@ private struct TargetCard: View {
         }
     }
 
-    private func direction(_ p: (alt: Double, az: Double, up: Double?, right: Double?)) -> some View {
-        HStack(spacing: 24) {
-            if let up = p.up, let right = p.right {
-                Label {
-                    Text("\(abs(up), format: .number.precision(.fractionLength(1)))°")
-                } icon: {
-                    Image(systemName: up >= 0 ? "arrow.up" : "arrow.down")
-                }
-                .accessibilityLabel("\(up >= 0 ? "Up" : "Down") \(abs(up), format: .number.precision(.fractionLength(1))) degrees")
-                Label {
-                    Text("\(abs(right), format: .number.precision(.fractionLength(1)))°")
-                } icon: {
-                    Image(systemName: right >= 0 ? "arrow.right" : "arrow.left")
-                }
-                .accessibilityLabel("\(right >= 0 ? "Right" : "Left") \(abs(right), format: .number.precision(.fractionLength(1))) degrees")
-            }
-        }
-        .font(.title2.weight(.semibold).monospacedDigit())
-        .foregroundStyle(theme.night ? Color.red : Color.green)
-    }
-
     private var actions: some View {
         HStack(spacing: 12) {
             if model.currentList >= 0 {
@@ -324,6 +334,99 @@ private struct TargetCard: View {
     }
 }
 
+/// How far to move the telescope toward the target or suggested star, and
+/// whether it is already in the finder or eyepiece.
+private struct DirectionReadout: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.1)) { tl in
+            let p = model.pointing(at: tl.date)
+            HStack(spacing: 24) {
+                if let up = p.up, let right = p.right {
+                    Label {
+                        Text("\(abs(up), format: .number.precision(.fractionLength(1)))°")
+                    } icon: {
+                        Image(systemName: up >= 0 ? "arrow.up" : "arrow.down")
+                    }
+                    .accessibilityLabel("\(up >= 0 ? "Up" : "Down") \(abs(up), format: .number.precision(.fractionLength(1))) degrees")
+                    Label {
+                        Text("\(abs(right), format: .number.precision(.fractionLength(1)))°")
+                    } icon: {
+                        Image(systemName: right >= 0 ? "arrow.right" : "arrow.left")
+                    }
+                    .accessibilityLabel("\(right >= 0 ? "Right" : "Left") \(abs(right), format: .number.precision(.fractionLength(1))) degrees")
+                }
+                Spacer(minLength: 0)
+                if model.guideInEyepiece || model.guideInFinder {
+                    Text(model.guideInEyepiece ? "In Eyepiece" : "In Finder")
+                        .font(.subheadline.weight(.bold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .overlay(Capsule().stroke(lineWidth: 1.5))
+                }
+            }
+            .font(.title2.weight(.semibold).monospacedDigit())
+            .foregroundStyle(theme.night ? Color.red : Color.green)
+        }
+    }
+}
+
+// MARK: Alignment step
+
+/// Between the stars of a multi-star alignment: the suggested next star and
+/// how to get there.
+private struct AlignStepCard: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "scope")
+                    .font(.title2)
+                    .foregroundStyle(theme.accent)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Alignment star \(model.alignSamples.count + 1) of \(model.alignStarsRequired)")
+                        .font(.subheadline)
+                        .foregroundStyle(theme.secondary)
+                    if let s = model.suggestedAlignIndex {
+                        let star = model.catalog[s]
+                        Text(star.displayName).font(.title3.bold())
+                        Text("Point the telescope at \(star.displayName), then tap it on the map. Any other bright star far from the first works too.")
+                            .font(.footnote)
+                            .foregroundStyle(theme.secondary)
+                    } else {
+                        Text("Choose a Bright Star").font(.title3.bold())
+                        Text("No bright star is well placed right now. Point at any bright star far from the first and tap it.")
+                            .font(.footnote)
+                            .foregroundStyle(theme.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            if model.suggestedAlignIndex != nil {
+                DirectionReadout()
+            }
+            HStack {
+                if model.suggestedAlignIndex != nil {
+                    Button("Other Star") { model.suggestAnotherStar() }
+                }
+                Spacer()
+                Button("Done") { model.finishAlign() }
+                    .accessibilityHint("Finishes the alignment with the stars aligned so far")
+            }
+            .buttonStyle(.bordered)
+            .disabled(model.selectMode == .countdown)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .floatingBackground(theme, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
 // MARK: Bottom bar
 
 private struct BottomBar: View {
@@ -334,9 +437,13 @@ private struct BottomBar: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            barButton(model.selectMode == .target ? "Align" : "Cancel",
-                      symbol: model.selectMode == .target ? "scope" : "xmark") {
-                if model.selectMode == .target { model.align() } else { model.cancelAlign() }
+            if model.isAligningNextStar && model.selectMode == .align {
+                barButton("Done", symbol: "checkmark") { model.finishAlign() }
+            } else {
+                barButton(model.selectMode == .target ? "Align" : "Cancel",
+                          symbol: model.selectMode == .target ? "scope" : "xmark") {
+                    if model.selectMode == .target { model.align() } else { model.cancelAlign() }
+                }
             }
             barButton("Search", symbol: "magnifyingglass") { showSearch = true }
             listMenu
