@@ -6,12 +6,16 @@ options:
   deploymentTarget:
     iOS: "27.0"
   createIntermediateGroups: true
+  # Marks the project as upgraded to Xcode 27's recommended settings.
+  xcodeVersion: "27.0"
 settings:
   base:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.0.11"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: 439DFSB44F
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
 targets:
   AstroHopper:
     type: application
