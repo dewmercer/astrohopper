@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>AstroHopper connects to your telescope's Celestron SkyPortal WiFi module to slew it to objects you choose.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>AstroHopper uses your location to compute where stars and planets are in your sky.</string>
 	<key>UILaunchScreen</key>

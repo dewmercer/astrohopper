@@ -167,10 +167,21 @@ private struct StatusCapsule: View {
                 }
             }
             .font(.caption)
+            .lineLimit(1)
             .foregroundStyle(theme.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .floatingBackground(theme, in: Capsule())
+
+            if model.telescope.enabled {
+                TelescopeChip()
+                    .font(.caption)
+                    .lineLimit(2)
+                    .foregroundStyle(theme.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .floatingBackground(theme, in: Capsule())
+            }
         }
         .padding(.top, 8)
     }
@@ -259,6 +270,9 @@ private struct TargetCard: View {
             if model.currentList >= 0 || model.isWikiAllowed {
                 actions
             }
+            if model.telescope.enabled && model.telescope.isConnected {
+                telescopeControls
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -295,6 +309,45 @@ private struct TargetCard: View {
             .foregroundStyle(theme.secondary)
             .accessibilityLabel("Clear Target")
         }
+    }
+
+    @State private var showPad = false
+
+    @ViewBuilder
+    private var telescopeControls: some View {
+        let scope = model.telescope
+        HStack(spacing: 12) {
+            if scope.activity == .slewing {
+                Button(role: .destructive) {
+                    scope.stop()
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                }
+            } else if let index = model.targetIndex {
+                Button {
+                    model.slew(to: index)
+                } label: {
+                    Label("GoTo", systemImage: "scope")
+                }
+                .disabled(!scope.isAligned)
+            }
+            Button {
+                scope.setTracking(!scope.trackAfterGoto)
+            } label: {
+                Label("Track", systemImage: scope.trackAfterGoto ? "checkmark.circle.fill" : "circle")
+            }
+            .accessibilityLabel("Tracking")
+            .accessibilityValue(scope.trackAfterGoto ? "On" : "Off")
+            .accessibilityHint("Keeps the telescope following the object after GoTo")
+            Spacer(minLength: 0)
+            Button {
+                withAnimation(.snappy) { showPad.toggle() }
+            } label: {
+                Label("Adjust", systemImage: showPad ? "chevron.down" : "dpad")
+            }
+        }
+        .buttonStyle(.bordered)
+        if showPad { SlewPad() }
     }
 
     private var actions: some View {
@@ -404,8 +457,12 @@ private struct AlignStepCard: View {
                 DirectionReadout()
             }
             HStack {
-                if model.suggestedAlignIndex != nil {
+                if let s = model.suggestedAlignIndex {
                     Button("Other Star") { model.suggestAnotherStar() }
+                    if model.telescope.isConnected && model.telescope.isAligned {
+                        Button("Slew There") { model.slew(to: s) }
+                            .disabled(model.telescope.activity == .slewing)
+                    }
                 }
                 Spacer()
                 Button("Done") { model.finishAlign() }
@@ -446,6 +503,9 @@ private struct ConfirmAlignCard: View {
                         .foregroundStyle(theme.secondary)
                 }
                 Spacer(minLength: 0)
+            }
+            if model.telescope.enabled && model.telescope.isConnected {
+                SlewPad()
             }
             Button {
                 model.confirmAlign()

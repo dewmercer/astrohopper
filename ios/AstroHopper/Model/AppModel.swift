@@ -40,6 +40,7 @@ final class AppModel {
     static let fovValues: [Double] = [7, 15, 30, 60, 90, 120, 150]
 
     let motion = MotionTracker()
+    let telescope = TelescopeController()
     let location = LocationProvider()
     private(set) var catalog: Catalog
     @ObservationIgnored private let planets: Planets?
@@ -361,6 +362,7 @@ final class AppModel {
 
     /// Port of `resetAll()`.
     func resetAll() {
+        telescope.resetAlignment()
         alignSamples = []
         alignmentError = nil
         suggestedAlignIndex = nil
@@ -434,6 +436,9 @@ final class AppModel {
             alignment = Alignment.fit(alignSamples)
             alignmentError = Alignment.rmsError(alignment, alignSamples)
         }
+        // each confirmed star also aligns a connected mount
+        telescope.addAlignmentStar(index: index, star: star, latitude: location.latitude,
+                                   restart: alignSamples.count == 1)
         setAligned(true)
         alignIndex = index
         previousAlignment = nil
@@ -443,6 +448,14 @@ final class AppModel {
             suggestNextStar(date: date)
         } else {
             finishAlign()
+        }
+    }
+
+    /// Slews a connected, aligned mount to a catalog object and, if set, tracks it.
+    func slew(to index: Int) {
+        telescope.goto(name: catalog[index].displayName) { [weak self] date in
+            guard let self else { return Vec3(0, 0, 1) }
+            return equatorialToENU(date) * catalog[index].eq
         }
     }
 

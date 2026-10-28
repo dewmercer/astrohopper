@@ -154,6 +154,19 @@ struct SettingsView: View {
                 .themedRow(theme)
 
                 Section {
+                    NavigationLink {
+                        TelescopeSettingsView()
+                    } label: {
+                        LabeledContent("Telescope", value: telescopeSummary)
+                    }
+                } header: {
+                    Text("Telescope Control")
+                } footer: {
+                    Text("Optional GoTo for Celestron mounts with a SkyPortal WiFi module.")
+                }
+                .themedRow(theme)
+
+                Section {
                     Picker("Wikipedia Button", selection: $model.wikiMode) {
                         ForEach(WikiMode.allCases) { Text($0.label).tag($0) }
                     }
@@ -210,6 +223,12 @@ struct SettingsView: View {
                 .themedBackground(theme)
             }
         }
+    }
+
+    private var telescopeSummary: String {
+        let scope = model.telescope
+        guard scope.enabled else { return "Off" }
+        return scope.isConnected ? "Connected" : "Not Connected"
     }
 
     private var alignmentDescription: String {

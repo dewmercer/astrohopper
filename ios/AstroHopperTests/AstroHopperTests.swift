@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Testing
 @testable import AstroHopper
 
@@ -501,5 +502,286 @@ struct FieldCircleTests {
         #expect(abs((model.eyepieceFOV ?? 0) - 52.0 / 48) < 1e-9)
         model.eyepieceCircle = false
         #expect(model.fieldCircles.eyepiece == nil)
+    }
+}
+
+struct AUXTests {
+    @Test func encodesPacketsWithChecksum() {
+        // MC_GET_POSITION from the app to the azimuth motor
+        #expect(AUX.Packet(.getPosition, to: .azimuth).bytes == [0x3B, 0x03, 0x20, 0x10, 0x01, 0xCC])
+        let p = AUX.Packet(.gotoFast, to: .altitude, data: AUX.encode(0x40_0000))
+        #expect(p.bytes == [0x3B, 0x06, 0x20, 0x11, 0x02, 0x40, 0x00, 0x00, 0x87])
+        #expect(p.value == 0x40_0000)
+    }
+
+    @Test func parsesAStreamWithNoiseAndSplitPackets() {
+        var parser = AUX.Parser()
+        let a = AUX.Packet(source: 0x10, destination: 0x20, command: 0x01, data: [0x12, 0x34, 0x56])
+        let b = AUX.Packet(source: 0x11, destination: 0x20, command: 0x13, data: [0xFF])
+        var bad = b.bytes
+        bad[bad.count - 1] ^= 0x55
+        let stream = [0x00, 0x3B] + bad + a.bytes + b.bytes
+        #expect(parser.feed(Array(stream[0..<10])) == [])
+        #expect(parser.feed(Array(stream[10...])) == [a, b])
+        #expect(a.value == 0x12_3456)
+    }
+
+    @Test func stepConversionRoundTrips() {
+        #expect(MountModel.steps(degrees: 90) == 0x40_0000)
+        #expect(MountModel.steps(degrees: -90) == 0xC0_0000)
+        #expect(MountModel.degrees(steps: 0xC0_0000) == -90)
+        #expect(abs(MountModel.degrees(steps: MountModel.steps(degrees: 123.456)) - 123.456) < 1e-4)
+    }
+}
+
+struct MountModelTests {
+    func angle(_ a: Vec3, _ b: Vec3) -> Double {
+        acos(max(-1, min(1, dot(normalize(a), normalize(b))))) * rad2deg
+    }
+
+    /// A mount whose encoders are 37° and -2° off, isn't quite level, and
+    /// whose tube is 1° off square, optionally with a reversed axis.
+    func truth(_ type: MountType, latitude: Double, signs: (axis1: Double, axis2: Double) = (1, 1),
+               tilt tiltDegrees: Double = 0.3) -> MountModel {
+        let az = Mat3.rotZ(degrees: 37)
+        let tilt = Mat3.rotation(axis: Vec3(1, 0, 0), angle: tiltDegrees * deg2rad)
+        var m = MountModel(type: type, latitude: latitude, signs: signs)
+        m.pointing = PointingModel(world: az * tilt, tubeAxis: normalize(Vec3(0.017, 1, -0.035)))
+        return m
+    }
+
+    func samples(_ m: MountModel, _ axes: [(Double, Double)]) -> [MountSample] {
+        axes.enumerated().map { i, a in MountSample(index: i, axis1: a.0, axis2: a.1, star: m.direction(a.0, a.1)) }
+    }
+
+    @Test func threeStarAltAzGotoIsAccurate() throws {
+        let t = truth(.altAz, latitude: 32)
+        let s = samples(t, [(10, 30), (130, 50), (250, 20)])
+        let fit = try #require(MountModel.fit(.altAz, latitude: 32, samples: s))
+        #expect(fit.rmsError(s) < 0.05)
+        for (a1, a2) in [(70.0, 60.0), (190, 35), (320, 15)] {
+            let target = t.direction(a1, a2)
+            let axes = fit.axes(for: target)
+            #expect(angle(t.direction(axes.axis1, axes.axis2), target) < 0.1)
+        }
+    }
+
+    @Test func detectsAReversedAxis() throws {
+        // level, so two stars can model it exactly; only three stars fit a tilt
+        let t = truth(.altAz, latitude: 32, signs: (-1, 1), tilt: 0)
+        let s = samples(t, [(10, 30), (130, 50)])
+        let fit = try #require(MountModel.fit(.altAz, latitude: 32, samples: s))
+        #expect(fit.signs.axis1 == -1 && fit.signs.axis2 == 1)
+        let target = t.direction(200, 40)
+        let axes = fit.axes(for: target)
+        let error = angle(t.direction(axes.axis1, axes.axis2), target)
+        #expect(error < 0.05, "goto error \(error)°")
+    }
+
+    @Test func equatorialMountUsesThePoleFrame() throws {
+        for lat in [45.0, -33.0] {
+            let t = truth(.equatorial, latitude: lat)
+            let s = samples(t, [(-40, 20), (30, 60), (80, -10)])
+            let fit = try #require(MountModel.fit(.equatorial, latitude: lat, samples: s))
+            #expect(fit.rmsError(s) < 0.05)
+            let target = t.direction(10, 35)
+            let axes = fit.axes(for: target)
+            #expect(angle(t.direction(axes.axis1, axes.axis2), target) < 0.1)
+        }
+        // the frame's vertical is the celestial pole
+        let f = MountModel.frame(.equatorial, latitude: 45)
+        #expect(angle(f * Vec3(0, cos(45 * deg2rad), sin(45 * deg2rad)), Vec3(0, 0, 1)) < 1e-9)
+    }
+
+    @Test func trackingRatesFollowTheTargetAndRemoveErrors() {
+        let r = TelescopeController.trackingRates(here: (100, 40), ahead: (100.05, 39.98), current: (99.9, 40), offset: (0, 0))
+        #expect(abs(r.axis1 - (0.005 + 0.025)) < 1e-9)
+        #expect(abs(r.axis2 - (-0.002)) < 1e-9)
+        // wrapping across ±180°
+        let w = TelescopeController.trackingRates(here: (179.99, 0), ahead: (-179.99, 0), current: (179.99, 0), offset: (0, 0))
+        #expect(abs(w.axis1 - 0.002) < 1e-9)
+    }
+}
+
+/// A stand-in for the SkyPortal module: echoes every packet like the AUX
+/// bus does, then answers as the two motor controllers. Gotos arrive
+/// instantly.
+final class FakeSkyPortal: @unchecked Sendable {
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "fake-skyportal")
+    private let lock = NSLock()
+    private var positions: [UInt8: UInt32] = [0x10: 0, 0x11: 0]
+    private(set) var commands: [AUX.Packet] = []
+
+    init() throws {
+        listener = try NWListener(using: .tcp, on: .any)
+    }
+
+    func start() async throws -> UInt16 {
+        listener.newConnectionHandler = { [weak self] conn in self?.serve(conn) }
+        return try await withCheckedThrowingContinuation { cont in
+            listener.stateUpdateHandler = { [listener] state in
+                switch state {
+                case .ready: cont.resume(returning: listener.port!.rawValue)
+                case let .failed(e): cont.resume(throwing: e)
+                default: break
+                }
+                listener.stateUpdateHandler = nil
+            }
+            listener.start(queue: queue)
+        }
+    }
+
+    func stop() { listener.cancel() }
+
+    func setAxes(_ a1: Double, _ a2: Double) {
+        lock.withLock { positions = [0x10: MountModel.steps(degrees: a1), 0x11: MountModel.steps(degrees: a2)] }
+    }
+
+    var axes: (Double, Double) {
+        lock.withLock { (MountModel.degrees(steps: positions[0x10]!), MountModel.degrees(steps: positions[0x11]!)) }
+    }
+
+    func received(_ command: UInt8) -> Bool { lock.withLock { commands.contains { $0.command == command } } }
+
+    private var parsers: [ObjectIdentifier: AUX.Parser] = [:]
+
+    private func serve(_ conn: NWConnection) {
+        conn.start(queue: queue)
+        receive(conn)
+    }
+
+    /// Runs on `queue` only.
+    private func receive(_ conn: NWConnection) {
+        conn.receive(minimumIncompleteLength: 1, maximumLength: 4096) { [weak self] data, _, done, _ in
+            guard let self, let data else { return }
+            var parser = parsers[ObjectIdentifier(conn)] ?? AUX.Parser()
+            for p in parser.feed([UInt8](data)) {
+                // the bus echoes the request before the reply
+                conn.send(content: Data(p.bytes + reply(to: p).bytes), completion: .idempotent)
+            }
+            parsers[ObjectIdentifier(conn)] = parser
+            if !done { receive(conn) }
+        }
+    }
+
+    private func reply(to p: AUX.Packet) -> AUX.Packet {
+        lock.withLock {
+            commands.append(p)
+            var data: [UInt8] = []
+            switch AUX.Command(rawValue: p.command) {
+            case .getPosition: data = AUX.encode(positions[p.destination] ?? 0)
+            case .gotoFast, .gotoSlow: positions[p.destination] = p.value
+            case .slewDone: data = [0xFF]
+            case .getVersion: data = [7, 11, 0, 0]
+            default: break
+            }
+            return AUX.Packet(source: p.destination, destination: 0x20, command: p.command, data: data)
+        }
+    }
+}
+
+@MainActor
+struct TelescopeSessionTests {
+    func waitUntil(_ timeout: Duration = .seconds(5), _ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while !condition() {
+            guard ContinuousClock.now < deadline else { throw TelescopeError.timeout }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
+    @Test func connectsAlignsSlewsAndTracks() async throws {
+        let fake = try FakeSkyPortal()
+        let port = try await fake.start()
+        defer { fake.stop() }
+
+        let scope = TelescopeController()
+        let saved = (scope.enabled, scope.connectionMode, scope.networkHost, scope.mountType, scope.trackAfterGoto, scope.minAltitude)
+        defer {
+            scope.disconnect()
+            (scope.enabled, scope.connectionMode, scope.networkHost, scope.mountType, scope.trackAfterGoto, scope.minAltitude) = saved
+        }
+        scope.enabled = true
+        scope.mountType = .altAz
+        scope.connectionMode = .network
+        scope.networkHost = "127.0.0.1"
+        scope.trackAfterGoto = true
+        scope.minAltitude = 0
+        scope.port = port
+        scope.connect()
+        try await waitUntil { scope.state == .connected }
+
+        // the mount's true pointing: encoders 20° off in azimuth
+        var truth = MountModel(type: .altAz, latitude: 32)
+        truth.pointing = PointingModel(world: Mat3.rotZ(degrees: 20))
+        for (i, (a1, a2)) in [(30.0, 40.0), (150, 55)].enumerated() {
+            fake.setAxes(a1, a2)
+            scope.addAlignmentStar(index: i, star: truth.direction(a1, a2), latitude: 32, restart: i == 0)
+            try await waitUntil { scope.samples.count == i + 1 }
+        }
+        #expect(scope.isAligned)
+        #expect((scope.alignmentError ?? 1) < 0.01)
+
+        let target = truth.direction(250, 30)
+        scope.goto(name: "Test Star") { _ in target }
+        try await waitUntil { scope.activity == .tracking }
+        let reached = fake.axes
+        #expect(abs(MountModel.wrap180(reached.0 - 250)) < 0.01 && abs(reached.1 - 30) < 0.01)
+        #expect(fake.received(AUX.Command.gotoFast.rawValue) && fake.received(AUX.Command.gotoSlow.rawValue))
+        try await waitUntil { fake.received(AUX.Command.setPosGuideRate.rawValue) || fake.received(AUX.Command.setNegGuideRate.rawValue) }
+
+        // tracking can be turned off and back on without another goto
+        scope.setTracking(false)
+        #expect(scope.activity == .idle && !scope.trackAfterGoto)
+        scope.setTracking(true)
+        #expect(scope.activity == .tracking)
+
+        scope.stop()
+        try await waitUntil { scope.activity == .idle }
+    }
+
+    @Test func gotoWithoutTrackingStopsAtTheTarget() async throws {
+        let fake = try FakeSkyPortal()
+        let port = try await fake.start()
+        defer { fake.stop() }
+        let scope = TelescopeController()
+        let saved = (scope.enabled, scope.connectionMode, scope.networkHost, scope.trackAfterGoto, scope.minAltitude)
+        defer {
+            scope.disconnect()
+            (scope.enabled, scope.connectionMode, scope.networkHost, scope.trackAfterGoto, scope.minAltitude) = saved
+        }
+        scope.enabled = true
+        scope.connectionMode = .network
+        scope.networkHost = "127.0.0.1"
+        scope.minAltitude = 0
+        scope.port = port
+        scope.setTracking(false)
+        scope.connect()
+        try await waitUntil { scope.state == .connected }
+        fake.setAxes(0, 45)
+        let truth = MountModel(type: scope.mountType, latitude: 32)
+        scope.addAlignmentStar(index: 0, star: truth.direction(0, 45), latitude: 32, restart: true)
+        try await waitUntil { scope.isAligned }
+
+        let target = truth.direction(90, 50)
+        scope.goto(name: "Test Star") { _ in target }
+        try await waitUntil { scope.activity == .idle && fake.received(AUX.Command.gotoSlow.rawValue) }
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(!fake.received(AUX.Command.setPosGuideRate.rawValue) || fake.commands.filter {
+            $0.command == AUX.Command.setPosGuideRate.rawValue || $0.command == AUX.Command.setNegGuideRate.rawValue
+        }.allSatisfy { $0.value == 0 })
+        #expect(scope.targetName == "Test Star")
+    }
+
+    @Test func reportsAMissingModule() async throws {
+        let scope = TelescopeController()
+        let saved = (scope.connectionMode, scope.networkHost)
+        defer { (scope.connectionMode, scope.networkHost) = saved }
+        scope.connectionMode = .network
+        scope.networkHost = "127.0.0.1"
+        scope.port = 1  // nothing listens here
+        scope.connect()
+        try await waitUntil(.seconds(8)) { scope.state == .disconnected && scope.lastError != nil }
     }
 }

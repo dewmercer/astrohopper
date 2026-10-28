@@ -60,6 +60,7 @@ targets:
           - UIInterfaceOrientationPortrait
         UIUserInterfaceStyle: Dark
         NSLocationWhenInUseUsageDescription: AstroHopper uses your location to compute where stars and planets are in your sky.
+        NSLocalNetworkUsageDescription: AstroHopper connects to your telescope's Celestron SkyPortal WiFi module to slew it to objects you choose.
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:

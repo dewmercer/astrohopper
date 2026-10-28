@@ -81,6 +81,9 @@ struct SkyRenderer {
             plotCross(ctx: &ctx)
         }
         plotFieldCircles(proj: proj, ctx: &ctx)
+        if let scope = model.telescope.pointingENU {
+            plotTelescope(camera * scope, proj: proj, ctx: &ctx)
+        }
         plotLines(toCamera: toCamera, proj: proj, ctx: &ctx)
         model.hitTargets.items = targets
     }
@@ -212,6 +215,20 @@ struct SkyRenderer {
                          at: CGPoint(x: cx + r * 0.71 + 3, y: cy - r * 0.71 - 3), anchor: .bottomLeading)
             }
         }
+    }
+
+    /// Where the connected mount points: a square reticle labelled "Scope".
+    private func plotTelescope(_ xyz: Vec3, proj: Projection, ctx: inout GraphicsContext) {
+        guard let p = proj.project(xyz) else { return }
+        let x = p.x * size.width, y = p.y * size.height
+        var path = Path(CGRect(x: x - 9, y: y - 9, width: 18, height: 18))
+        for (dx, dy) in [(1.0, 0.0), (0, 1), (-1, 0), (0, -1)] {
+            path.move(to: CGPoint(x: x + 9 * dx, y: y + 9 * dy))
+            path.addLine(to: CGPoint(x: x + 16 * dx, y: y + 16 * dy))
+        }
+        ctx.stroke(path, with: .color(style.align), lineWidth: 2)
+        ctx.draw(Text("Scope").font(font(2.5)).foregroundStyle(style.align),
+                 at: CGPoint(x: x + 18, y: y + 18), anchor: .topLeading)
     }
 
     private func plotCross(ctx: inout GraphicsContext) {

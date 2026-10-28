@@ -7,9 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		143620E3243227A3D3819A90 /* TelescopeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBB3306D4B0D866A66F75B4 /* TelescopeController.swift */; };
 		23F3A8A09D7766B677676562 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6FCEE9DA51CA963957106F /* SearchView.swift */; };
 		2E2E73678720D7F8838E03CE /* Parsing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59224B92D69DBAFB7FFD1732 /* Parsing.swift */; };
 		3C4AB38E7E854102F4A5E6D2 /* AstroHopperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */; };
+		3E827F7E18060EB0C8DB3608 /* Mount.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0AC60C362239918CD14BDD5 /* Mount.swift */; };
 		47ACEF9BEE46E85C6EC91D34 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */; };
 		53A9DB171F471E4A4C1F3425 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AE4A7D71B2742E7A46BE501 /* ContentView.swift */; };
 		58F8F49322545F2DB622BCAC /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5FE21ED3B85C3761A899717 /* HelpView.swift */; };
@@ -25,9 +27,12 @@
 		B65D4DD1F84154B4AE343475 /* MotionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6ADA780EDDB800524364D3A /* MotionTracker.swift */; };
 		B9A66609CA925CD19A03FD7E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D317FBF2354C143A2985C7C3 /* SettingsView.swift */; };
 		BDF0810F82434974372F8124 /* AstroHopperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */; };
+		C61DCCA7AA1BF4A0F9C5BF58 /* TelescopeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1392141ECDBBF05F0246B043 /* TelescopeViews.swift */; };
+		DEDB52D81CE161C041D062A2 /* AUX.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BADC546A4EE1BA7F444778 /* AUX.swift */; };
 		E525DB07A5423465395B1F12 /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */; };
 		EB54A00B9CD2E1FDEFCA765E /* Planets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F81E8168BBB70F8EECB4E126 /* Planets.swift */; };
 		ED7EAC35A72BB703C0129A78 /* SkyMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBA77503187E797FD5362DC4 /* SkyMath.swift */; };
+		FD163101CFBAA8BAA6762E6D /* AUXClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 930D653814FEA81E1A4BC943 /* AUXClient.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,25 +47,30 @@
 
 /* Begin PBXFileReference section */
 		04F3EED4A25DE9A4EB7DC88B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1392141ECDBBF05F0246B043 /* TelescopeViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelescopeViews.swift; sourceTree = "<group>"; };
 		23F64E218F07618FB26F61CD /* catalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = catalog.json; sourceTree = "<group>"; };
 		24E1670910C34A7A36292BB0 /* Alignment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alignment.swift; sourceTree = "<group>"; };
 		2515A9AE9FD68157EE441176 /* Help.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Help.md; sourceTree = "<group>"; };
 		3826A996865E41A714EF9EF3 /* AstroHopperApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperApp.swift; sourceTree = "<group>"; };
 		3F04A83D70DC4478E5708437 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		59224B92D69DBAFB7FFD1732 /* Parsing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parsing.swift; sourceTree = "<group>"; };
+		5DBB3306D4B0D866A66F75B4 /* TelescopeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TelescopeController.swift; sourceTree = "<group>"; };
 		7A6FCEE9DA51CA963957106F /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		7AE4A7D71B2742E7A46BE501 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8A46549D52344609FC852876 /* AstroHopperTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AstroHopperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		930D653814FEA81E1A4BC943 /* AUXClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AUXClient.swift; sourceTree = "<group>"; };
 		96222DE4774DC40B8D956FBC /* AstroHopper.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AstroHopper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		987A9D2D603FA5ABD4FEA7A6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B1FD86ADEF879999A9F9C5E2 /* vsop87a.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = vsop87a.json; sourceTree = "<group>"; };
 		B2ADE9CC2198AE033118660A /* AstroHopperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AstroHopperTests.swift; sourceTree = "<group>"; };
 		B6ADA780EDDB800524364D3A /* MotionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionTracker.swift; sourceTree = "<group>"; };
 		B7CCD16963AEB5745C987C5E /* LocationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationProvider.swift; sourceTree = "<group>"; };
+		C2BADC546A4EE1BA7F444778 /* AUX.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AUX.swift; sourceTree = "<group>"; };
 		CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Catalog.swift; sourceTree = "<group>"; };
 		D317FBF2354C143A2985C7C3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D5FE21ED3B85C3761A899717 /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
+		E0AC60C362239918CD14BDD5 /* Mount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mount.swift; sourceTree = "<group>"; };
 		E0EA8A0F293077966A02B3C8 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		F81E8168BBB70F8EECB4E126 /* Planets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Planets.swift; sourceTree = "<group>"; };
 		F88DA78816E50AF780C3C986 /* SkyRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkyRenderer.swift; sourceTree = "<group>"; };
@@ -87,12 +97,16 @@
 			children = (
 				24E1670910C34A7A36292BB0 /* Alignment.swift */,
 				8B22871FF8CCFDE0D49D2C8C /* AppModel.swift */,
+				C2BADC546A4EE1BA7F444778 /* AUX.swift */,
+				930D653814FEA81E1A4BC943 /* AUXClient.swift */,
 				CDF4A7E6AAD1A60D14177FE0 /* Catalog.swift */,
 				B7CCD16963AEB5745C987C5E /* LocationProvider.swift */,
 				B6ADA780EDDB800524364D3A /* MotionTracker.swift */,
+				E0AC60C362239918CD14BDD5 /* Mount.swift */,
 				59224B92D69DBAFB7FFD1732 /* Parsing.swift */,
 				F81E8168BBB70F8EECB4E126 /* Planets.swift */,
 				FBA77503187E797FD5362DC4 /* SkyMath.swift */,
+				5DBB3306D4B0D866A66F75B4 /* TelescopeController.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -149,6 +163,7 @@
 				7A6FCEE9DA51CA963957106F /* SearchView.swift */,
 				D317FBF2354C143A2985C7C3 /* SettingsView.swift */,
 				F88DA78816E50AF780C3C986 /* SkyRenderer.swift */,
+				1392141ECDBBF05F0246B043 /* TelescopeViews.swift */,
 				E0EA8A0F293077966A02B3C8 /* Theme.swift */,
 			);
 			path = Views;
@@ -288,6 +303,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DEDB52D81CE161C041D062A2 /* AUX.swift in Sources */,
+				FD163101CFBAA8BAA6762E6D /* AUXClient.swift in Sources */,
 				994F7020C69F997039C17D7B /* Alignment.swift in Sources */,
 				5F0591DFEF2B991E76D5BF93 /* AppModel.swift in Sources */,
 				BDF0810F82434974372F8124 /* AstroHopperApp.swift in Sources */,
@@ -296,6 +313,7 @@
 				58F8F49322545F2DB622BCAC /* HelpView.swift in Sources */,
 				6552B56CB857C4197FEE4FAF /* LocationProvider.swift in Sources */,
 				B65D4DD1F84154B4AE343475 /* MotionTracker.swift in Sources */,
+				3E827F7E18060EB0C8DB3608 /* Mount.swift in Sources */,
 				92ECC5F1632AFE2844EE1888 /* OnboardingView.swift in Sources */,
 				2E2E73678720D7F8838E03CE /* Parsing.swift in Sources */,
 				EB54A00B9CD2E1FDEFCA765E /* Planets.swift in Sources */,
@@ -303,6 +321,8 @@
 				B9A66609CA925CD19A03FD7E /* SettingsView.swift in Sources */,
 				ED7EAC35A72BB703C0129A78 /* SkyMath.swift in Sources */,
 				97689D7B13BC03A22B63315F /* SkyRenderer.swift in Sources */,
+				143620E3243227A3D3819A90 /* TelescopeController.swift in Sources */,
+				C61DCCA7AA1BF4A0F9C5BF58 /* TelescopeViews.swift in Sources */,
 				817497F681CA76C4F8463F28 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

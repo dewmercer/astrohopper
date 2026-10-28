@@ -34,6 +34,19 @@ Tutorial videos:
 - Demonstration and tutorial by Nir Zonshine: <https://youtu.be/AtArqBLWWJ8>
 - Review by John Dreese (Reflactor): <https://youtu.be/6-_58mSGz1Q>
 
+## Telescope Control (GoTo)
+
+If your Celestron mount has a SkyPortal WiFi module, AstroHopper can slew it to the object you select and track it. Turn it on in Settings › Telescope Control.
+
+1. **Choose the mount type**: Alt-Azimuth (NexStar SE, SLT, Evolution, CPC and similar) or Equatorial (AVX, CGEM, CGX, or a fork on a wedge).
+2. **Connect.** In Direct mode, set the module's switch to Direct Connect and join its CELESTRON WiFi network in the iPhone's Settings. In WiFi Network mode, the module is on your home network: enter its address or tap **Find on Network**. Then tap **Connect**. The status under the alignment status shows the telescope's state.
+3. **Align.** Align as usual. Each star you confirm with **Aligned** also aligns the mount. Center each star with the arrows on the alignment card (hold an arrow to move; the tortoise and hare change the speed) or with the hand controller. Don't push the tube by hand or loosen the clutches: the mount would lose track of where it points. With an equatorial mount, use 2 or 3 stars, so the app can learn which way each axis turns. Between stars, **Slew There** moves the telescope to the suggested star.
+4. **GoTo.** Select an object and tap **GoTo** on its card. The telescope slews and makes a final precise approach. **Stop** halts a slew. **Track** on the card turns tracking on or off: when it's on, the telescope keeps following the object after it arrives; turning it off leaves the telescope where it is. **Adjust** shows the arrows to re-center the object; while tracking, the correction is kept.
+
+A square marked "Scope" on the map shows where the telescope points. Goto refuses objects below the altitude limit (Settings › Telescope › Altitude Limit).
+
+AstroHopper only talks to the WiFi module; nothing is sent to the internet. Keep the app open while tracking, since the app drives the motors.
+
 ## Troubleshooting
 
 **The sky looks different from what I expect.** Make sure Location Services are allowed for AstroHopper. Until a location is known, "No Location" is shown at the top of the screen. Check the coordinates under Settings › Location and Sensors.
