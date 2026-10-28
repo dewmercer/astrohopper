@@ -20,9 +20,34 @@ final class MotionTracker {
     private(set) var isAvailable = false
     private(set) var hasCompass = false
     private(set) var hasSample = false
-    /// Rotation speed in degrees per second, smoothed over about a quarter
-    /// second so that a shaking tube reads as moving. Zero in demo mode.
-    @ObservationIgnored private(set) var angularSpeed: Double = 0
+
+    /// One sensor reading. The last two seconds are kept so that pressing a
+    /// button can use the attitude from just before the finger touched the
+    /// phone, before the touch shook the telescope.
+    struct Reading {
+        var time: TimeInterval
+        var tilt: Mat3
+        var gyroAlpha: Double
+        var compassAlpha: Double?
+    }
+
+    @ObservationIgnored private var history: [Reading] = []
+
+    var current: Reading {
+        Reading(time: ProcessInfo.processInfo.systemUptime, tilt: tilt, gyroAlpha: gyroAlpha, compassAlpha: compassAlpha)
+    }
+
+    /// The latest reading taken at or before `time` (system uptime).
+    func reading(at time: TimeInterval) -> Reading {
+        history.last(where: { $0.time <= time }) ?? history.first ?? current
+    }
+
+    private func record(at time: TimeInterval) {
+        history.append(Reading(time: time, tilt: tilt, gyroAlpha: gyroAlpha, compassAlpha: compassAlpha))
+        if let i = history.firstIndex(where: { $0.time >= time - 2 }), i > 0 {
+            history.removeFirst(i)
+        }
+    }
 
     /// Demo mode (simulator or no gyro): drag gestures move a virtual telescope.
     var isDemo: Bool { !isAvailable }
@@ -94,19 +119,14 @@ final class MotionTracker {
         let dt = lastTimestamp.map { min(max(motion.timestamp - $0, 0), 0.1) } ?? 0
         lastTimestamp = motion.timestamp
         update(attitude: attitude, rotationRate: Vec3(w.x, w.y, w.z), dt: dt)
+        // CMDeviceMotion timestamps count from boot, like systemUptime
+        record(at: motion.timestamp)
     }
 
     private func update(attitude: Mat3, rotationRate w: Vec3, dt: Double) {
         let alpha = Attitude.alpha(of: attitude) ?? compassAlpha ?? 0
         let newTilt = Mat3.rotZ(degrees: -alpha) * attitude
         if hasCompass { compassAlpha = alpha }
-
-        let speed = length(w) * rad2deg
-        if !hasSample {
-            angularSpeed = speed
-        } else if dt > 0 {
-            angularSpeed += (1 - exp(-dt / 0.25)) * (speed - angularSpeed)
-        }
 
         if !hasSample {
             gyroAlpha = alpha
@@ -135,6 +155,7 @@ final class MotionTracker {
         tilt = Mat3.tilt(beta: demoBeta, gamma: 0)
         gyroAlpha = demoAlpha
         hasSample = true
+        record(at: ProcessInfo.processInfo.systemUptime)
     }
 
     /// Rotation matrix of a unit quaternion (rotates vectors by q).
@@ -142,31 +163,5 @@ final class MotionTracker {
         Mat3(r0: Vec3(1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)),
              r1: Vec3(2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)),
              r2: Vec3(2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)))
-    }
-}
-
-/// Decides when the telescope has stopped moving after the user touched the
-/// phone: the rotation speed must stay below `threshold` for `duration`
-/// seconds in a row. Any movement starts the wait again.
-struct SteadinessTimer {
-    /// Degrees per second. Well above the gyroscope's noise, below the
-    /// wobble of a tube that was just touched.
-    static let threshold = 0.5
-    static let duration = 1.5
-
-    private(set) var steadyTime = 0.0
-    private(set) var isMoving = false
-
-    var progress: Double { min(steadyTime / Self.duration, 1) }
-    var isComplete: Bool { steadyTime >= Self.duration }
-
-    mutating func update(angularSpeed: Double, dt: Double) {
-        if angularSpeed > Self.threshold {
-            steadyTime = 0
-            isMoving = true
-        } else {
-            steadyTime += dt
-            isMoving = false
-        }
     }
 }

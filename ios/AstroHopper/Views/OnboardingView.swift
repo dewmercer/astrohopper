@@ -18,7 +18,7 @@ struct OnboardingView: View {
         Page(image: "qs_1_1", symbol: "iphone", title: "Attach Your Phone",
              text: "Attach the phone to the telescope tube so its **top** points where the telescope looks and it lies flat on the tube."),
         Page(image: "qs_2_1", symbol: "scope", title: "Align on a Bright Star",
-             text: "Point the telescope at an easy star or planet **near** your target, such as Sirius for M41. Tap **Align**, then tap that star on the map. Let go and wait while the ring fills; it restarts if the telescope moves."),
+             text: "Point the telescope at an easy star or planet **near** your target, such as Sirius for M41. Tap **Align**, then tap that star on the map. Center it in the eyepiece and tap **Aligned**."),
         Page(image: nil, symbol: "hand.draw", title: "Can't Find the Star?",
              text: "If the compass is off, the star may not be on screen. Tap **Compass** to switch to manual mode, drag the map until you see the star, then align as usual."),
         Page(image: "qs_3_1", symbol: "location.north.line", title: "Hop to Your Target",

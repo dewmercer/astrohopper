@@ -300,31 +300,49 @@ struct CancelAlignTests {
     }
 }
 
-struct SteadinessTests {
-    @Test func completesAfterStayingStill() {
-        var t = SteadinessTimer()
-        for _ in 0..<29 { t.update(angularSpeed: 0.1, dt: 0.05) }
-        #expect(!t.isComplete && !t.isMoving)
-        t.update(angularSpeed: 0.1, dt: 0.05)
-        #expect(t.isComplete && t.progress == 1)
+@MainActor
+struct ConfirmAlignTests {
+    @Test func choosingAStarWaitsForConfirmation() throws {
+        let model = AppModel()
+        model.alignStarsRequired = 1
+        let sirius = try #require(model.catalog.find("Sirius"))
+        let vega = try #require(model.catalog.find("Vega"))
+        model.align()
+        model.chooseAlignStar(sirius)
+        #expect(model.selectMode == .confirm && !model.aligned)
+        model.chooseAlignStar(vega)  // changed their mind
+        model.confirmAlign()
+        #expect(model.aligned && model.selectMode == .target && model.alignIndex == vega)
     }
 
-    @Test func movementRestartsTheWait() {
-        var t = SteadinessTimer()
-        for _ in 0..<20 { t.update(angularSpeed: 0.1, dt: 0.05) }
-        #expect(t.progress > 0.6)
-        t.update(angularSpeed: 3, dt: 0.05)
-        #expect(t.isMoving && t.progress == 0)
-        for _ in 0..<29 { t.update(angularSpeed: 0.2, dt: 0.05) }
-        #expect(!t.isComplete)
-        t.update(angularSpeed: 0.2, dt: 0.05)
-        #expect(t.isComplete)
+    @Test func confirmUsesTheAttitudeFromBeforeTheTouch() async throws {
+        let model = AppModel()
+        model.alignStarsRequired = 1
+        let sirius = try #require(model.catalog.find("Sirius"))
+        model.align()
+        model.chooseAlignStar(sirius)
+        model.motion.demoMove(dAlpha: 0, dBeta: 0)  // the steady position
+        try await Task.sleep(for: .milliseconds(400))
+        model.alignButtonPressed()
+        model.motion.demoMove(dAlpha: 3, dBeta: 2)  // the touch shakes the tube
+        model.confirmAlign()
+        #expect(model.aligned)
+        model.motion.demoMove(dAlpha: -3, dBeta: -2)  // back to the steady position
+        let star = model.equatorialToENU(Date()) * model.catalog[sirius].eq
+        #expect(dot(model.cameraRays().fwd, star) > cos(0.05 * deg2rad))
     }
 
-    @Test func neverCompletesWhileShaking() {
-        var t = SteadinessTimer()
-        for _ in 0..<200 { t.update(angularSpeed: 2, dt: 0.05) }
-        #expect(!t.isComplete && t.isMoving)
+    @Test func cancellingTheChosenNextStarKeepsWaiting() throws {
+        let model = AppModel()
+        model.alignStarsRequired = 2
+        defer { model.alignStarsRequired = 1 }
+        let sirius = try #require(model.catalog.find("Sirius"))
+        let vega = try #require(model.catalog.find("Vega"))
+        model.align()
+        model.selectAlign(sirius)
+        model.chooseAlignStar(vega)
+        model.cancelAlign()
+        #expect(model.selectMode == .align && model.isAligningNextStar && model.alignIndex == sirius)
     }
 }
 

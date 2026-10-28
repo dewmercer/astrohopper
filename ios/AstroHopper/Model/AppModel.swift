@@ -86,15 +86,13 @@ final class AppModel {
 
     // MARK: Pointing state
 
-    enum SelectMode { case target, align, countdown }
+    /// `align`: waiting for the user to tap the alignment star; `confirm`:
+    /// waiting for them to say the telescope is centered on it.
+    enum SelectMode { case target, align, confirm }
 
     private(set) var selectMode: SelectMode = .target
     private(set) var targetIndex: Int?
     private(set) var alignIndex: Int?
-    /// While waiting for the telescope to settle: how long it has been
-    /// still, from 0 to 1, and whether it is moving right now.
-    private(set) var steadyProgress: Double?
-    private(set) var settling = false
     /// `global_use_gyro`: aligned on a star and tracking with the gyroscope.
     private(set) var aligned = false
     private(set) var useCompass = false
@@ -113,7 +111,7 @@ final class AppModel {
     private(set) var guideInEyepiece = false
     private var alphaUserOffset = 0.0
     private var alphaDiff = 0.0
-    @ObservationIgnored private var countdownTask: Task<Void, Never>?
+    @ObservationIgnored private var pressStart: TimeInterval?
     /// Alignment in effect before `align()`, restored by `cancelAlign()`.
     @ObservationIgnored private var previousAlignment: (aligned: Bool, model: PointingModel, samples: [AlignmentSample],
                                                         error: Double?, alphaDiff: Double, offset: Double, index: Int?)?
@@ -275,7 +273,6 @@ final class AppModel {
 
     /// Port of `align()`.
     func align() {
-        if selectMode == .countdown { return }
         if aligned && !useCompass {
             // realign in manual mode: keep bearing
             alphaUserOffset = motion.gyroAlpha + alphaDiff - baseAlpha
@@ -296,9 +293,6 @@ final class AppModel {
 
     /// Ends a multi-star alignment with the stars aligned so far.
     func finishAlign() {
-        countdownTask?.cancel()
-        steadyProgress = nil
-        settling = false
         selectMode = .target
         suggestedAlignIndex = nil
         skippedSuggestions = []
@@ -335,17 +329,14 @@ final class AppModel {
         return target
     }
 
-    /// Leaves alignment mode (or stops the countdown) and restores the
+    /// Leaves alignment mode (or drops the chosen star) and restores the
     /// alignment that was in effect before.
     func cancelAlign() {
         guard selectMode != .target else { return }
-        countdownTask?.cancel()
-        steadyProgress = nil
-        settling = false
         if !alignSamples.isEmpty {
-            // multi-star: cancelling a countdown waits for another star;
+            // multi-star: cancelling a chosen star waits for another one;
             // otherwise keep the stars aligned so far
-            if selectMode == .countdown {
+            if selectMode == .confirm {
                 selectMode = .align
                 alignIndex = alignSamples.last?.index
             } else {
@@ -370,9 +361,6 @@ final class AppModel {
 
     /// Port of `resetAll()`.
     func resetAll() {
-        countdownTask?.cancel()
-        steadyProgress = nil
-        settling = false
         alignSamples = []
         alignmentError = nil
         suggestedAlignIndex = nil
@@ -386,7 +374,7 @@ final class AppModel {
         alignOnDSO ? t != .constellation : (t == .star || t == .planet)
     }
 
-    var waitingForAlign: Bool { selectMode == .align }
+    var waitingForAlign: Bool { selectMode != .target }
 
     /// Tap on the map at a screen point (selectionEvent).
     func tap(x: Double, y: Double) {
@@ -394,51 +382,50 @@ final class AppModel {
         switch selectMode {
         case .target:
             targetIndex = index
-        case .align:
-            if let index { startAlignCountdown(index) }
-        case .countdown:
-            break
+        case .align, .confirm:
+            // while confirming, tapping another star changes the choice
+            if let index { chooseAlignStar(index) }
         }
     }
 
-    /// Replaces `selectAlignWithTimer()`: instead of a fixed 3 s wait, wait
-    /// until the gyroscope shows the telescope has stopped shaking.
-    private func startAlignCountdown(_ index: Int) {
+    /// Replaces `selectAlignWithTimer()`: the chosen star waits for the user
+    /// to confirm that the telescope is centered on it.
+    func chooseAlignStar(_ index: Int) {
         alignIndex = index
-        selectMode = .countdown
-        steadyProgress = 0
-        settling = false
-        countdownTask?.cancel()
-        countdownTask = Task { [weak self] in
-            var timer = SteadinessTimer()
-            let clock = ContinuousClock()
-            var last = clock.now
-            while !timer.isComplete {
-                try? await Task.sleep(for: .milliseconds(50))
-                if Task.isCancelled { return }
-                guard let self else { return }
-                let now = clock.now
-                timer.update(angularSpeed: motion.angularSpeed, dt: (now - last) / .seconds(1))
-                last = now
-                steadyProgress = timer.progress
-                settling = timer.isMoving
-            }
-            self?.steadyProgress = nil
-            self?.settling = false
-            self?.selectAlign(index)
-        }
+        selectMode = .confirm
+    }
+
+    /// How long before the finger touches the Aligned button the attitude
+    /// is taken, so the touch itself can't move the alignment.
+    static let touchLead: TimeInterval = 0.25
+
+    /// Called when a finger lands on the Aligned button.
+    func alignButtonPressed() {
+        pressStart = ProcessInfo.processInfo.systemUptime
+    }
+
+    /// The user says the telescope is centered on the chosen star.
+    func confirmAlign() {
+        guard selectMode == .confirm, let index = alignIndex else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        let t = min(pressStart ?? now, now) - Self.touchLead
+        pressStart = nil
+        selectAlign(index, date: Date(timeIntervalSinceNow: t - now), reading: motion.reading(at: t))
     }
 
     /// Port of `selectAlign()`, extended to several stars. The first star
     /// centers the view exactly, like the web app; each further star refits
     /// the pointing model to all of them.
-    func selectAlign(_ index: Int, date: Date = Date()) {
+    /// `reading` is the sensor reading to align with (by default the latest).
+    func selectAlign(_ index: Int, date: Date = Date(), reading: MotionTracker.Reading? = nil) {
         let star = equatorialToENU(date) * catalog[index].eq
-        let attitude = measuredAttitude
+        let r = reading ?? motion.current
+        let base = useCompass ? (r.compassAlpha ?? 0) : 0
+        let attitude = Mat3.rotZ(degrees: aligned ? r.gyroAlpha + alphaDiff : base + alphaUserOffset) * r.tilt
         if alignSamples.isEmpty || !aligned {
             let cam = CameraRays(deviceToENU: attitude, alignment: nil)
             alignment = PointingModel(world: Alignment.oneStar(camera: cam, star: star))
-            alphaDiff = (baseAlpha + alphaUserOffset) - motion.gyroAlpha
+            alphaDiff = (base + alphaUserOffset) - r.gyroAlpha
             alignSamples = [AlignmentSample(index: index, deviceToENU: attitude, star: star)]
             alignmentError = nil
         } else {

@@ -12,7 +12,7 @@ Before you attach the phone, calibrate the compass by moving it in a figure-8 pa
 
 1. Point the telescope at an easily identifiable star or planet near the object you want to observe.
 2. Tap **Align** in the toolbar.
-3. Tap the star or planet you pointed at, then let go of the telescope. The app waits until the gyroscope shows the telescope has stopped shaking, and the ring at the top fills while it stays still. If it moves, the status says "Waiting for the telescope to settle" and the wait starts again. Then the app is aligned on that object: the status at the top says "Aligned", and a cross in the center of the screen shows where the telescope points. Tap **Cancel** to keep the previous alignment instead.
+3. Tap the star or planet you pointed at. Center it in the eyepiece, then tap **Aligned** on the card at the bottom. The app uses the telescope's position from just before your finger touched the screen, so the tap itself doesn't spoil the alignment. To use a different star, tap it on the map before tapping Aligned. Then the app is aligned on that object: the status at the top says "Aligned", and a cross in the center of the screen shows where the telescope points. Tap **Cancel** to keep the previous alignment instead.
 4. Tap the object you want to observe, or tap **Search** and find it by name. A line on the map shows which way to move the telescope, and the card at the bottom shows how far: up or down, and left or right.
 5. Move the telescope until the numbers on the card are close to zero. The telescope now points at the requested object.
 6. To move to the next object, repeat the alignment from step 1, because the phone's gyroscope loses accuracy over time and over multiple movements.
@@ -21,7 +21,7 @@ Before you attach the phone, calibrate the compass by moving it in a figure-8 pa
 
 A single star corrects the map near that star, but if the phone isn't exactly parallel to the tube, the error grows as you move away from it. In Settings › Alignment, choose 2 or 3 alignment stars to correct for this.
 
-After the first star, the card at the bottom suggests the next one: a bright star well away from the first, comfortably above the horizon. Follow the arrows to it, tap it, and let the telescope settle as before. Tap **Other Star** for a different suggestion; any bright star far from the first works. With three stars, the app also corrects a small tilt.
+After the first star, the card at the bottom suggests the next one: a bright star well away from the first, comfortably above the horizon. Follow the arrows to it, tap it, center it, and tap **Aligned** as before. Tap **Other Star** for a different suggestion; any bright star far from the first works. With three stars, the app also corrects a small tilt.
 
 When alignment is complete, the status shows how well the stars agree, for example "Aligned on 2 stars ±0.3°". A large value means one of the stars wasn't centered, so align again. Tap **Done** at any point to stop with the stars aligned so far.
 

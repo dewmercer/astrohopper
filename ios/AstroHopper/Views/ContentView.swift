@@ -21,7 +21,10 @@ struct ContentView: View {
                     Spacer()
                     ZoomControl()
                 }
-                if model.isAligningNextStar {
+                if model.selectMode == .confirm {
+                    ConfirmAlignCard()
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if model.isAligningNextStar {
                     AlignStepCard()
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 } else if model.target != nil || model.currentList >= 0 {
@@ -34,6 +37,7 @@ struct ContentView: View {
             .padding(.bottom, 4)
             .animation(.snappy, value: model.targetIndex)
             .animation(.snappy, value: model.isAligningNextStar)
+            .animation(.snappy, value: model.selectMode)
         }
         .themed(theme)
         .statusBarHidden(true)
@@ -174,20 +178,9 @@ private struct StatusCapsule: View {
     @ViewBuilder
     private var status: some View {
         switch model.selectMode {
-        case .countdown:
-            HStack(spacing: 8) {
-                ZStack {
-                    Circle().stroke(theme.secondary.opacity(0.4), lineWidth: 3)
-                    Circle()
-                        .trim(from: 0, to: model.steadyProgress ?? 0)
-                        .stroke(theme.accent, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                }
-                .frame(width: 18, height: 18)
-                Text(model.settling ? "Waiting for the telescope to settle…"
-                                    : "Hold steady on \(model.alignObject?.displayName ?? "star")…")
-            }
-            .font(.subheadline.weight(.semibold))
+        case .confirm:
+            Label("Center \(model.alignObject?.displayName ?? "the star"), then tap Aligned", systemImage: "scope")
+                .font(.subheadline.weight(.semibold))
         case .align:
             if model.isAligningNextStar {
                 Label("Aim at star \(model.alignSamples.count + 1) of \(model.alignStarsRequired), then tap it",
@@ -419,11 +412,72 @@ private struct AlignStepCard: View {
                     .accessibilityHint("Finishes the alignment with the stars aligned so far")
             }
             .buttonStyle(.bordered)
-            .disabled(model.selectMode == .countdown)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .floatingBackground(theme, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+// MARK: Confirm alignment
+
+/// After choosing the alignment star: the button that tells the app the
+/// telescope is centered on it.
+private struct ConfirmAlignCard: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "scope")
+                    .font(.title2)
+                    .foregroundStyle(theme.accent)
+                    .frame(width: 32)
+                VStack(alignment: .leading, spacing: 2) {
+                    if model.alignStarsRequired > 1 {
+                        Text("Alignment star \(model.alignSamples.count + 1) of \(model.alignStarsRequired)")
+                            .font(.subheadline)
+                            .foregroundStyle(theme.secondary)
+                    }
+                    Text(model.alignObject?.displayName ?? "Star").font(.title3.bold())
+                    Text("Center it in the eyepiece, then tap Aligned. To use a different star, tap it on the map.")
+                        .font(.footnote)
+                        .foregroundStyle(theme.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            Button {
+                model.confirmAlign()
+            } label: {
+                Label("Aligned", systemImage: "checkmark")
+            }
+            .buttonStyle(AlignedButtonStyle(theme: theme) { model.alignButtonPressed() })
+            .accessibilityHint("Tells the app the telescope is centered on \(model.alignObject?.displayName ?? "the star")")
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .floatingBackground(theme, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+/// A large capsule button that reports the moment a finger lands on it.
+private struct AlignedButtonStyle: ButtonStyle {
+    let theme: Theme
+    let onPress: () -> Void
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.headline)
+            .frame(maxWidth: .infinity, minHeight: 54)
+            .foregroundStyle(theme.night ? Color.red : Color.white)
+            .background(theme.night ? Color.black : Color.accentColor, in: Capsule())
+            .overlay(Capsule().stroke(theme.night ? Color.red : Color.clear, lineWidth: 2))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .contentShape(Capsule())
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed { onPress() }
+            }
     }
 }
 
